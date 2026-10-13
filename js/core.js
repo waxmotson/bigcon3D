@@ -107,7 +107,7 @@ function initGame(defs,opts){
  const all=defs.map(d=>({name:d.name,char:d.char,bot:false}));
  // Explicit aliases ensure named bots with an existing portrait always use that portrait.
  // Exact name/id matches are also picked up automatically as the lists grow.
- const BOT_CHAR_MAP={'Jake Tomkins':'tomkins'};
+ const BOT_CHAR_MAP={'Jake Tomkins':'tomkins','Daniel Swain':'denialswan'};
  const normalise=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
  for(let b=0;b<bots;b++){
   const name=names[b%names.length];
