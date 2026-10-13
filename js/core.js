@@ -132,17 +132,23 @@ function zoneLive(n){const z=S.zone;return !z||Math.hypot(n.wx-z.cx,n.wz-z.cz)<=
 function newPlayer(d,i){return{name:d.name,color:playerColor(i),char:d.char||null,bot:!!d.bot,money:15,intel:2,cortisol:0,raided:0,hp:100,armor:0,alive:true,dc:false,kills:0,heatAt:0,cd:{},dossierUntil:0,slipUntil:0,slipSpent:false,speedUntil:0,cuffs:0,spyUntil:0,spawnProt:0,streak:0,lastKillT:-99}}
 function initGame(defs,opts){
  const bots=Math.max(0,Math.min(MAXENT-defs.length,opts.bots|0));
- const used=new Set(defs.map(d=>d.char));const names=shuffle(BOT_NAMES);
+ const used=new Set(defs.map(d=>d.char));
+ // Null means a deliberately blank face. Put mapped characters first so the first
+ // three (elite) bot slots get faces; regular bots always remain blank.
+ const named=shuffle(BOT_NAMES.filter(name=>BOT_CHARACTERS[name]));
+ const blank=shuffle(BOT_NAMES.filter(name=>!BOT_CHARACTERS[name]));
+ const names=named.concat(blank);
  const all=defs.map(d=>({name:d.name,char:d.char,bot:false}));
  const normalise=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
  for(let b=0;b<bots;b++){
   const name=names[b%names.length];
-  const exact=CHARS.find(c=>normalise(c.name)===normalise(name)||normalise(c.id)===normalise(name));
-  const preferred=charMeta(BOT_CHARACTERS[name])||exact;
-  let ch=preferred&&!used.has(preferred.id)?preferred:null;
-  if(!ch){const free=CHARS.filter(c=>!used.has(c.id));ch=free.length?free[Math.floor(Math.random()*free.length)]:CHARS[Math.floor(Math.random()*CHARS.length)]}
-  used.add(ch.id);
-  all.push({name,char:ch.id,bot:true});
+  let ch=null;
+  if(b<3&&BOT_CHARACTERS[name]){
+   const preferred=charMeta(BOT_CHARACTERS[name]);
+   ch=preferred&&!used.has(preferred.id)?preferred:null;
+  }
+  if(ch)used.add(ch.id);
+  all.push({name,char:ch?ch.id:null,bot:true});
  }
  const quikSlot=Math.floor(Math.random()*QUIK_SLOTS.length),seed=(Math.random()*1e9)|0;
  const a=Math.random()*Math.PI*2,half=270;
