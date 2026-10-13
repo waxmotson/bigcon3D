@@ -6,7 +6,35 @@ const WIN_TYPES=['BANK','REGULATOR','CHART','WILD','CORPORATE','COMMODITY','MEDI
 const TICK_SEC=20,EVENT_SEC=38,QANTAS_GROUND=90,JET_WAIT=3,JET_SPD=36,JET_Y=130;
 const ZONE=[{wait:70,shrink:40,r:215},{wait:55,shrink:38,r:150},{wait:45,shrink:34,r:95},{wait:38,shrink:28,r:55},{wait:30,shrink:24,r:28},{wait:20,shrink:20,r:7}];
 const GOAL_MIN=40,GOAL_MAX=999,GOAL_DEF=250;
-const BOT_NAMES=['Seth Wegrzyn','Aidan Newling','Daniel Swain','Elijah Son','Jake Tomkins','Inkdin Intern','McMetro Mike','Hormuz Harry','Low Cortisol Lou','Pyongyang Prof','New Lakemba Nick','NESA Inspector','Compliance Carl','Bondmageddon Bob','Toktimer Tim','Quikstop Quentin','Forklift Fred','Sisyphus Sam','Brad (not Pitt)','Leaked Larry','Hedge Hannah','Coal Corp Cathy','Short Seller Sal','Backroom Barry'];
+// Single editable map: bot display name -> character ID in js/data.js.
+// Use null for a random available character image.
+const BOT_CHARACTERS={
+ 'Seth Wegrzyn':null,
+ 'Aidan Newling':null,
+ 'Daniel Swain':'denialswan',
+ 'Elijah Son':null,
+ 'Jake Tomkins':'tomkins',
+ 'Inkdin Intern':null,
+ 'McMetro Mike':null,
+ 'Hormuz Harry':null,
+ 'Low Cortisol Lou':null,
+ 'Pyongyang Prof':null,
+ 'New Lakemba Nick':null,
+ 'NESA Inspector':null,
+ 'Compliance Carl':null,
+ 'Bondmageddon Bob':null,
+ 'Toktimer Tim':null,
+ 'Quikstop Quentin':null,
+ 'Forklift Fred':null,
+ 'Sisyphus Sam':null,
+ 'Brad (not Pitt)':null,
+ 'Leaked Larry':null,
+ 'Hedge Hannah':null,
+ 'Coal Corp Cathy':null,
+ 'Short Seller Sal':null,
+ 'Backroom Barry':null
+};
+const BOT_NAMES=Object.keys(BOT_CHARACTERS);
 let S=null;
 const P=[];                 // per-player transforms {x,y,z,yaw,pitch,w,fl}
 const PK=new Map();         // pickups
@@ -105,9 +133,15 @@ function initGame(defs,opts){
  const bots=Math.max(0,Math.min(MAXENT-defs.length,opts.bots|0));
  const used=new Set(defs.map(d=>d.char));const names=shuffle(BOT_NAMES);
  const all=defs.map(d=>({name:d.name,char:d.char,bot:false}));
+ const normalise=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
  for(let b=0;b<bots;b++){
-  const free=CHARS.filter(c=>!used.has(c.id));const ch=free.length?free[Math.floor(Math.random()*free.length)]:CHARS[Math.floor(Math.random()*CHARS.length)];used.add(ch.id);
-  all.push({name:names[b%names.length],char:ch.id,bot:true});
+  const name=names[b%names.length];
+  const exact=CHARS.find(c=>normalise(c.name)===normalise(name)||normalise(c.id)===normalise(name));
+  const preferred=charMeta(BOT_CHARACTERS[name])||exact;
+  let ch=preferred&&!used.has(preferred.id)?preferred:null;
+  if(!ch){const free=CHARS.filter(c=>!used.has(c.id));ch=free.length?free[Math.floor(Math.random()*free.length)]:CHARS[Math.floor(Math.random()*CHARS.length)]}
+  used.add(ch.id);
+  all.push({name,char:ch.id,bot:true});
  }
  const quikSlot=Math.floor(Math.random()*QUIK_SLOTS.length),seed=(Math.random()*1e9)|0;
  const a=Math.random()*Math.PI*2,half=270;
