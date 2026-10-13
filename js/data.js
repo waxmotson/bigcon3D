@@ -187,6 +187,27 @@ const CHARS=[
 ];
 function charMeta(id){return CHARS.find(c=>c.id===id)||null}
 function charSrc(id){const c=charMeta(id);return c?CHARURL+c.file:''}
+// GitHub Pages cannot list a directory itself, so query the repository's public Contents API.
+// Existing names are preserved; newly uploaded image files become selectable automatically.
+function refreshCharacters(){
+ return fetch('https://api.github.com/repos/waxmotson/bigcon3D/contents/characters?ref=master',{headers:{Accept:'application/vnd.github+json'}})
+  .then(r=>{if(!r.ok)throw new Error('Character listing HTTP '+r.status);return r.json()})
+  .then(items=>{
+   if(!Array.isArray(items))return;
+   const existing=new Map(CHARS.map(c=>[c.file.toLowerCase(),c]));
+   const images=items.filter(x=>x&&x.type==='file'&&/\.(png|jpe?g|webp|gif)$/i.test(x.name));
+   const discovered=images.map(x=>{
+    const file=x.name,id=file.replace(/\.[^.]+$/,'').toLowerCase(),known=existing.get(file.toLowerCase());
+    return known||{id,name:id.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),file};
+   });
+   if(discovered.length){
+    CHARS.splice(0,CHARS.length,...discovered);
+    if(typeof renderCharGrid==='function')renderCharGrid();
+    if(typeof renderLobbyList==='function')renderLobbyList();
+   }
+  }).catch(err=>{console.warn('Could not refresh ./characters; using built-in character list.',err)});
+}
+refreshCharacters();
 const MOODS={
  CALM:{label:'MARKET: CALM',color:'#8fbf7f',tint:'rgba(70,130,70,0.045)',rate:2,desc:'no modifiers · 1 🛈 = $2'},
  BOOM:{label:'MARKET: BOOM',color:'#f5c542',tint:'rgba(200,160,40,0.075)',rate:2,desc:'COMMODITIES +$1/turn · 1 🛈 = $2'},
