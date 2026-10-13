@@ -101,6 +101,8 @@ const BASE_EDGES=[
 ];
 const EDGES=BASE_EDGES;
 const TYPE_COLORS={BANK:'#3d8fd1',REGULATOR:'#c0392b',CHART:'#e8a020',COMMODITY:'#d35400',CORPORATE:'#2e7d64',MEDIA:'#8e44ad',WILD:'#7f8c8d'};
+const PCOLORS=['#f5c542','#55c1ff','#e19bff','#7fe08d','#ff5e9c','#ffffff','#00e5c0','#ffa94d'];
+const MAXHUMANS=8,MAXENT=24;
 const CHARURL='./characters/';
 const CHARS=[
  {id:'markwatson',name:'Mark Watson',file:'markwatson.png'},
@@ -130,7 +132,6 @@ function charSrc(id){const c=charMeta(id);return c?CHARURL+c.file:''}
     const name = base.replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
     CHARS.push({id, name, file:f.name});
    });
-   // Re-render character grid if the lobby is already showing
    if(typeof renderCharGrid==='function')renderCharGrid();
   })
   .catch(()=>{/* keep fallback */});
