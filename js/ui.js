@@ -241,8 +241,10 @@ UI.over=function(m){
  const w=m.win>=0?S.players[m.win]:null;
  const why=m.how==='con'?'completes THE BIG CON — $'+m.goal+' and one of every node type.':m.how==='last'?'is the last con standing.':'picks the field clean.';
  const rows=m.board.map((b,k)=>'<div><span>'+(k+1)+'.</span><img src="'+charSrc(b.char)+'" alt=""><span class="wn" style="color:'+b.color+'">'+esc(b.name)+'</span><span>'+b.nodes+' ex · '+b.kills+' busts · $'+Math.floor(b.money)+'</span></div>').join('');
+ const me=S.players[Net.myIdx];
+ const eliminated=UI.solo&&me&&!me.alive&&me.eliminatedBy ? '<p style="text-align:center;margin:12px 0;color:#ff8b7b;font-weight:800">YOU WERE ELIMINATED BY '+esc(me.eliminatedBy).toUpperCase()+'</p>' : '';
  const ov=document.createElement('div');ov.className='overlay';ov.style.zIndex=300;
- ov.innerHTML='<div class="mcard"><div class="mtitle">🏆 THE BIG CON PAYS OUT</div><div class="mbody"><div class="winname" style="color:'+(w?w.color:'#fff')+'">'+esc(w?w.name:'NOBODY')+'</div><p style="text-align:center">'+(w?'<b>'+esc(w.name)+'</b> '+why:'Nobody walks away.')+' The market was rigged. It was rigged by <b>them</b>.</p><div class="winlist">'+rows+'</div></div><div class="mopts"><button onclick="location.reload()">PLAY AGAIN</button></div></div>';
+ ov.innerHTML='<div class="mcard"><div class="mtitle">🏆 THE BIG CON PAYS OUT</div><div class="mbody"><div class="winname" style="color:'+(w?w.color:'#fff')+'">'+esc(w?w.name:'NOBODY')+'</div><p style="text-align:center">'+(w?'<b>'+esc(w.name)+'</b> '+why:'Nobody walks away.')+' The market was rigged. It was rigged by <b>them</b>.</p>'+eliminated+'<div class="winlist">'+rows+'</div></div><div class="mopts"><button onclick="location.reload()">PLAY AGAIN</button></div></div>';
  document.body.appendChild(ov);if(document.exitPointerLock)document.exitPointerLock();SFX.play('kill');
 };
 
