@@ -284,6 +284,9 @@ R.render=function(dt,v){
  cam.position.set(cx+sh,cy+v.bob+sh,cz);
  cam.rotation.y=yaw;cam.rotation.x=pitch+v.recoil*.012;cam.rotation.z=v.roll||0;
  cam.fov=v.fov;cam.updateProjectionMatrix();
- R.vm.visible=!v.hideVm;R.vm.position.y=-.2+(v.vmDip||0)-v.recoil*.01;R.flash.visible=v.flashT>0;R.flash.material.opacity=v.flashT*12;
- r.render(sc,cam);
+ // viewmodel pose
+ const k=v.ads?1:0;R.vk=(R.vk||0)+(k-(R.vk||0))*Math.min(1,dt*14);
+ R.vm.position.set(.2-.2*R.vk,-.2+.075*R.vk-(v.vmDip||0),-.35+(v.recoil||0)*.06);R.vm.rotation.x=(v.recoil||0)*.08;
+ R.flash.visible=(v.flashT||0)>0;
+ R.renderer.render(sc,cam);
 };
