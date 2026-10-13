@@ -34,6 +34,7 @@ const faceTex={};
 function getFace(charId){
  if(faceTex[charId])return faceTex[charId];
  const c=document.createElement('canvas');c.width=512;c.height=256;
+ // Null character IDs deliberately keep this plain skin-tone canvas: no image is loaded.
  const g=c.getContext('2d');g.fillStyle='#d8ad87';g.fillRect(0,0,c.width,c.height);
  const t=new THREE.CanvasTexture(c);
  // Sphere UVs span the whole image; offset U so the image centre faces forward (-Z).
