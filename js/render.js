@@ -190,8 +190,13 @@ function getAvatar(i){
  const col=_c1.set(p.color).clone();
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,.95,10),new THREE.MeshLambertMaterial({color:col}));body.position.y=.92;g.add(body);
  const legs=new THREE.Mesh(new THREE.CylinderGeometry(.24,.2,.5,8),new THREE.MeshLambertMaterial({color:0x222a2a}));legs.position.y=.25;g.add(legs);
- const head=new THREE.Mesh(new THREE.SphereGeometry(.22,12,10),new THREE.MeshLambertMaterial({color:0xe8bf98}));head.position.y=1.6;g.add(head);
- const face=new THREE.Sprite(new THREE.SpriteMaterial({map:getFace(p.char),transparent:true,fog:false}));face.scale.set(.85,.85,1);face.position.y=1.62;g.add(face);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),new THREE.MeshLambertMaterial({color:0xe8bf98}));head.position.y=1.6;g.add(head);
+ // face rendered straight onto the front of the head sphere (circular decal, fixed to the avatar orientation)
+ const faceMat=new THREE.MeshBasicMaterial({map:getFace(p.char),transparent:true,fog:false,side:THREE.DoubleSide,depthWrite:false});
+ const face=new THREE.Mesh(new THREE.CircleGeometry(.195,32),faceMat);
+ face.position.set(0,1.62,-.185); // slightly in front of the sphere surface (front is -Z)
+ face.rotation.y=Math.PI; // face outward
+ g.add(face);
  const gun=new THREE.Mesh(new THREE.BoxGeometry(.08,.1,.55),new THREE.MeshLambertMaterial({color:0xcccccc}));gun.position.set(.3,1.0,-.35);g.add(gun);
  const tag=textSprite(p.name,'#fff',{w:256,h:48,sw:5,sh:.95,font:'bold 26px system-ui'});tag.position.y=2.35;g.add(tag);
  const chute=new THREE.Mesh(new THREE.SphereGeometry(2.6,14,8,0,6.283,0,1.45),new THREE.MeshLambertMaterial({color:0xe0001b,side:THREE.DoubleSide,transparent:true,opacity:.92}));chute.position.y=4.4;chute.visible=false;g.add(chute);
@@ -256,30 +261,34 @@ R.render=function(dt,v){
   if(!e){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:pickupTex(o),transparent:true,fog:false}));const sz=o.big?2.6:1.3;s.scale.set(sz,sz,1);R.worldGroup.add(s);e={s,b:null,ph:Math.random()*6};
    if(o.big){const b=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,40,8,1,true),new THREE.MeshBasicMaterial({color:0xf5c542,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));b.position.set(o.x,o.y+20,o.z);R.worldGroup.add(b);e.b=b}
    R.pk.set(id,e)}
-  e.s.position.set(o.x,o.y+(o.big?1.8:1)+Math.sin(R.t*2.4+e.ph)*.18,o.z);
-  e.s.visible=Math.hypot(o.x-cam.position.x,o.z-cam.position.z)<150;
+  e.s.position.set(o.x,o.y+.4+Math.sin(R.t*2+e.ph)*.15,o.z);if(e.b)e.b.position.set(o.x,o.y+20,o.z);
  }
- for(const [id,e] of R.pk){if(!PK.has(id)){R.worldGroup.remove(e.s);if(e.b)R.worldGroup.remove(e.b);R.pk.delete(id)}}
+ for(const id of R.pk.keys())if(!PK.has(id)){const e=R.pk.get(id);R.worldGroup.remove(e.s);if(e.b)R.worldGroup.remove(e.b);R.pk.delete(id)}
  // grenades
- for(const [id,o] of R.gr){stepGrenade(o.g,dt);o.m.position.set(o.g.x,o.g.y,o.g.z);o.g.t+=dt;if(o.g.t>8)R.endGrenade(id)}
- // effects
- for(const t of R.tr){if(t.life>0){t.life-=dt;t.l.material.opacity=Math.max(0,t.life/.09);if(t.life<=0)t.l.visible=false}}
- for(const p of R.sp){if(p.life>0){p.life-=dt;p.vy-=14*dt;p.s.position.x+=p.vx*dt;p.s.position.y+=p.vy*dt;p.s.position.z+=p.vz*dt;p.s.material.opacity=Math.max(0,p.life*3);if(p.life<=0)p.s.visible=false}}
- for(let k=R.boomFx.length-1;k>=0;k--){const b=R.boomFx[k];b.t+=dt;const s=1+b.t*18;b.m.scale.set(s,s,s);b.m.material.opacity=Math.max(0,.9-b.t*2.2);if(b.t>.45){sc.remove(b.m);R.boomFx.splice(k,1)}}
- for(let k=R.ft.length-1;k>=0;k--){const f=R.ft[k];f.t+=dt;f.s.position.y=f.y0+f.t*1.6;f.s.material.opacity=Math.min(1,(1.6-f.t)*2);if(f.t>1.6){sc.remove(f.s);f.s.material.map.dispose();f.s.material.dispose();R.ft.splice(k,1)}}
- // camera
- const bob=v.bob||0;
- if(v.third){const rp=RP[v.follow]||{x:v.x,y:v.y,z:v.z,yaw:v.yaw};const d=dirFrom(rp.yaw,0);cam.position.set(rp.x-d[0]*5,rp.y+3.2,rp.z-d[2]*5);cam.rotation.set(-.25,-rp.yaw,0);R.vm.visible=false}
- else{
-  cam.position.set(v.x,v.y+(v.eye||EYE)+bob,v.z);
-  cam.rotation.set(v.pitch+(v.recoil||0)*.03,-v.yaw,v.roll||0);
-  R.vm.visible=!v.ads||v.wid!=='short'?!v.hideVm:false;
+ for(const [id,o] of R.gr){
+  const g=o.g;g.vy-=24*dt;g.x+=g.vx*dt;g.z+=g.vz*dt;g.y+=g.vy*dt;const grnd=World.groundAt(g.x,g.z,g.y);
+  if(g.y<=grnd){g.y=grnd;g.vy*=-.35;g.vx*=.6;g.vz*=.6}o.m.position.set(g.x,g.y,g.z);g.t+=dt;
  }
- R.shake*=Math.pow(.02,dt);if(R.shake>.002){cam.position.x+=(Math.random()-.5)*R.shake;cam.position.y+=(Math.random()-.5)*R.shake;cam.rotation.z+=(Math.random()-.5)*R.shake*.05}
- const fov=v.fov||78;if(Math.abs(cam.fov-fov)>.05){cam.fov+=(fov-cam.fov)*Math.min(1,dt*14);cam.updateProjectionMatrix()}
- // viewmodel pose
- const k=v.ads?1:0;R.vk=(R.vk||0)+(k-(R.vk||0))*Math.min(1,dt*14);
- R.vm.position.set(.2-.2*R.vk,-.2+.075*R.vk-(v.vmDip||0),-.35+(v.recoil||0)*.06);R.vm.rotation.x=(v.recoil||0)*.08;
- R.flash.visible=(v.flashT||0)>0;
- R.renderer.render(sc,cam);
+ // boom fx
+ for(let i=R.boomFx.length-1;i>=0;i--){const b=R.boomFx[i];b.t+=dt;b.m.scale.setScalar(1+b.t*18);b.m.material.opacity=.9*(1-b.t/.35);if(b.t>.35){sc.remove(b.m);R.boomFx.splice(i,1)}}
+ // tracers / sparks / floats
+ R.tr.forEach(t=>{if(t.life>0){t.life-=dt;t.l.material.opacity=Math.max(0,t.life/.09);if(t.life<=0)t.l.visible=false}});
+ R.sp.forEach(p=>{if(p.life>0){p.life-=dt;p.s.position.x+=p.vx*dt;p.s.position.y+=p.vy*dt;p.s.position.z+=p.vz*dt;p.vy-=18*dt;p.s.material.opacity=Math.max(0,p.life/.4);if(p.life<=0)p.s.visible=false}});
+ for(let i=R.ft.length-1;i>=0;i--){const f=R.ft[i];f.t+=dt;f.s.position.y=f.y0+f.t*3;f.s.material.opacity=1-f.t/1.4;if(f.t>1.4){sc.remove(f.s);R.ft.splice(i,1)}}
+ // floating money/intel from state
+ const maxFx=(S.fx||[]).reduce((a,f)=>Math.max(a,f.id),0);
+ (S.fx||[]).forEach(f=>{if(f.id<=R.fxSeen||f.b)return;const q=P[f.pi];if(q)R.float(q.x,q.y+2.2,q.z,f.t,f.c)});
+ R.fxSeen=maxFx;
+ // camera
+ const third=v.third,follow=v.follow;
+ let cx,cy,cz,yaw,pitch;
+ if(third&&follow>=0&&P[follow]){const q=P[follow];cx=q.x;cy=q.y+1.6;cz=q.z;yaw=q.yaw;pitch=q.pitch}
+ else{cx=v.x;cy=v.y+v.eye;cz=v.z;yaw=v.yaw;pitch=v.pitch}
+ R.shake=Math.max(0,R.shake-dt*2.2);
+ const sh=R.shake*(Math.random()-.5)*.4;
+ cam.position.set(cx+sh,cy+v.bob+sh,cz);
+ cam.rotation.y=yaw;cam.rotation.x=pitch+v.recoil*.012;cam.rotation.z=v.roll||0;
+ cam.fov=v.fov;cam.updateProjectionMatrix();
+ R.vm.visible=!v.hideVm;R.vm.position.y=-.2+(v.vmDip||0)-v.recoil*.01;R.flash.visible=v.flashT>0;R.flash.material.opacity=v.flashT*12;
+ r.render(sc,cam);
 };
