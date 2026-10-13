@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>THE BIG CON 3D — BATTLE ROYALE</title>
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="setup">
+ <div class="setupcard">
+  <div class="splash-logo"><img id="splashLogo" src="whatsappbigcon_1.gif" alt="THE BIG CON"></div>
+  <div class="bigtitle">THE BIG CON 3D</div>
+  <div class="tag">Battle royale. Same rigged market.</div>
+  <div class="intro">Drop from the Qantas jet onto the evidence board. Seize exhibits, collect your cut, raise your Cortisol, dodge the regulators — and shoot anyone who gets in the way. Outlast the field as the dragnet closes in, <i>or</i> bank the target <i>and</i> hold one of every node type to complete the Big Con.</div>
+  <div id="chooser" class="chooserow">
+   <button class="modebtn" id="btnHost">HOST</button>
+   <button class="modebtn" id="btnJoin">JOIN</button>
+   <button class="modebtn" id="btnSolo">SOLO VS BOTS</button>
+  </div>
+  <div class="netform" id="hostForm">
+   <label class="namelab"><input id="hostName" maxlength="16" placeholder="Your name — e.g. JTPortal"></label>
+   <button class="gobtn" id="btnCreate">CREATE ROOM</button>
+  </div>
+  <div class="netform" id="joinForm">
+   <label class="namelab"><input id="joinName" maxlength="16" placeholder="Your name"><input id="joinCode" class="code" maxlength="28" list="buzzwords" placeholder="BUZZWORD" autocomplete="off"></label>
+   <datalist id="buzzwords"></datalist>
+   <div class="gn">Room codes are JTPortal buzzwords — type the one the host read out (e.g. NESA, HORNSBY HEIGHTS, JAKE TOMKINS).</div>
+   <button class="gobtn" id="btnJoinGo">JOIN GAME</button>
+  </div>
+  <div id="lobbyView">
+   <div class="codeline"><div class="cl">ROOM CODE — SAY IT OUT LOUD</div><div class="cc" id="roomCodeBig">·····</div><button class="copybtn" id="btnCopy">📋 copy code</button></div>
+   <div class="goalrow">
+    <div class="cl">THE BIG CON — BANK THIS MUCH <i>AND</i> HOLD ONE OF EVERY NODE TYPE</div>
+    <div class="goalctl"><span class="gd">$</span><input id="goalInput" type="number" min="40" max="999" step="10" value="250"><span class="gn" id="goalNote"></span></div>
+    <div class="gn" style="margin-top:6px">THE FULL SET: BANK · REGULATOR · CHART · WILD · CORPORATE · COMMODITY · MEDIA</div>
+    <div class="goalctl" style="margin-top:10px"><span class="gd" style="font-size:16px">🤖</span><input id="botsInput" type="number" min="0" max="23" step="1" value="10"><span class="gn" id="botsNote"></span></div>
+   </div>
+   <div class="lobbychat">
+    <div class="cl">THE WIRE — LOBBY CHAT</div>
+    <div class="chatlist" id="lobbyChatList"></div>
+    <div class="chatrow"><input id="lobbyChatInput" maxlength="140" placeholder="talk your book before the jet leaves…"><button id="lobbyChatSend">SEND</button></div>
+   </div>
+   <div class="sublabel" style="margin-top:14px">PICK A FACE — one player per character</div>
+   <div class="chargrid" id="charGrid"></div>
+   <div class="lobbylist" id="lobbyList"></div>
+   <button class="gobtn" id="btnStart" style="margin-top:12px;width:100%" disabled>🔥 BOARD THE JET</button>
+  </div>
+  <div id="netStatus"></div>
+  <div class="setuplinks"><button id="btnRules">📖 How to play</button></div>
+ </div>
+</div>
+
+<div id="game">
+ <canvas id="gl"></canvas>
+ <div id="hud">
+  <div id="wire"><span class="wl" id="wireMood">MARKET: CALM</span><span id="wireText"></span></div>
+  <div id="topl" class="pn"></div>
+  <div id="topr"><canvas id="mini" width="380" height="380"></canvas><div id="feed"></div></div>
+  <div id="botl" class="pn">
+   <div class="bar" id="hpb"><i></i><span></span></div>
+   <div class="bar" id="arb"><i></i><span></span></div>
+   <div class="cortlab" id="cortlab"></div>
+   <div class="cortrow" id="cortrow"></div>
+   <div id="cash"></div>
+  </div>
+  <div id="botr" class="pn"><div id="wname"></div><div id="ammo"></div><div id="slots"></div></div>
+  <div id="scope"></div>
+  <div id="cross"></div><div id="hitm"></div>
+  <div id="hint"></div>
+  <div id="banner"></div>
+  <div id="bigfx"></div>
+  <div id="menu"></div>
+  <div id="promptov"></div>
+  <div id="chatwrap"><div id="chatlog"></div><input id="chatin" maxlength="140" placeholder="say something (Enter)"></div>
+  <div id="toasts"></div>
+  <div id="vig"></div><div id="flash"></div>
+  <div id="spec"><div class="btitle">BUSTED</div><div id="specinfo"></div></div>
+ </div>
+ <div id="bigmap"><div class="maphelp" id="maphelp"></div><canvas id="mapc" width="1200" height="780"></canvas></div>
+ <div id="pauseov"><div class="pc">
+  <h2>THE BIG CON 3D</h2>
+  <div class="gn" style="margin-top:6px">Outlast 23 other cons — or complete the Big Con.</div>
+  <div class="ctl">
+   <div><b>WASD</b>move</div><div><b>SHIFT</b>sprint</div>
+   <div><b>SPACE</b>jump / leave the jet / chute</div><div><b>C</b>crouch</div>
+   <div><b>MOUSE</b>aim · <b>LMB</b>fire · <b>RMB</b>aim down sights</div><div><b>R</b>reload</div>
+   <div><b>1-5</b>weapons · <b>WHEEL</b>swap</div><div><b>G</b>MARGIN CALL (grenade)</div>
+   <div><b>HOLD E</b>seize / take over an exhibit</div><div><b>B</b>plant a bug at a rival exhibit</div>
+   <div><b>Q</b>THE CON MENU (abilities, shop)</div><div><b>M</b>evidence-board map</div>
+   <div><b>ENTER</b>chat</div><div><b>ESC</b>release the mouse</div>
+  </div>
+  <div class="gn" style="margin-top:12px;line-height:1.5">Money seizes exhibits and buys gear. Every seizure adds Cortisol — hit 8 and the regulators raid you: two exhibits gone, fined, cuffed. Stay inside the dragnet. Bust a con and you take 35% of their cash.</div>
+  <div class="go">CLICK TO PLAY</div>
+ </div></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/econ.js"></script>
+<script src="js/world.js"></script>
+<script src="js/core.js"></script>
+<script src="js/bots.js"></script>
+<script src="js/net.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
