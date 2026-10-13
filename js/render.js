@@ -191,12 +191,14 @@ function getAvatar(i){
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,.95,10),new THREE.MeshLambertMaterial({color:col}));body.position.y=.92;g.add(body);
  const legs=new THREE.Mesh(new THREE.CylinderGeometry(.24,.2,.5,8),new THREE.MeshLambertMaterial({color:0x222a2a}));legs.position.y=.25;g.add(legs);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),new THREE.MeshLambertMaterial({color:0xe8bf98}));head.position.y=1.6;g.add(head);
- // face rendered straight onto the front of the head sphere (circular decal, fixed to the avatar orientation)
- const faceMat=new THREE.MeshBasicMaterial({map:getFace(p.char),transparent:true,fog:false,side:THREE.DoubleSide,depthWrite:false});
- const face=new THREE.Mesh(new THREE.CircleGeometry(.195,32),faceMat);
- face.position.set(0,1.62,-.185); // slightly in front of the sphere surface (front is -Z)
- face.rotation.y=Math.PI; // face outward
- g.add(face);
+ // face rendered straight onto the front of the head sphere (circular texture on a plane, fixed to avatar facing)
+ try{
+  const faceMat=new THREE.MeshBasicMaterial({map:getFace(p.char),transparent:true,fog:false,side:THREE.DoubleSide,depthWrite:false});
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(.4,.4),faceMat);
+  face.position.set(0,1.62,-.19);
+  face.rotation.y=Math.PI;
+  g.add(face);
+ }catch(e){console.warn('face decal failed',e)}
  const gun=new THREE.Mesh(new THREE.BoxGeometry(.08,.1,.55),new THREE.MeshLambertMaterial({color:0xcccccc}));gun.position.set(.3,1.0,-.35);g.add(gun);
  const tag=textSprite(p.name,'#fff',{w:256,h:48,sw:5,sh:.95,font:'bold 26px system-ui'});tag.position.y=2.35;g.add(tag);
  const chute=new THREE.Mesh(new THREE.SphereGeometry(2.6,14,8,0,6.283,0,1.45),new THREE.MeshLambertMaterial({color:0xe0001b,side:THREE.DoubleSide,transparent:true,opacity:.92}));chute.position.y=4.4;chute.visible=false;g.add(chute);
