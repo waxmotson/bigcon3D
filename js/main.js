@@ -173,7 +173,7 @@ function update(dt){
   const crouch=!!Keys.KeyC,sprint=!!sprintK&&fwd>0&&!crouch&&!Me.ads;Me.sprinting=sprint;
   let spd=(crouch?3.4:sprint?9.6:6.5)*speedMult(me,T);if(Me.ads)spd*=.72;
   // The red evidence threads are sprint lanes: give a strong bonus while running along them.
-  if(Me.onGround&&laneNear(Me.x,Me.z))spd*=1.4;
+  if(Me.onGround&&sprint&&laneNear(Me.x,Me.z))spd*=1.4;
   const k=Math.min(1,dt*(Me.onGround?13:3));
   Me.vx+=(wx*spd-Me.vx)*k;Me.vz+=(wz*spd-Me.vz)*k;
   if(Game.space&&Me.onGround){Me.vy=8.6;Me.onGround=false}Game.space=false;
