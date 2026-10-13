@@ -246,7 +246,6 @@ function connectGuest(){
    clearTimeout(to);guestRetry=0;c.__lastSeen=Date.now();
    const sendHello=()=>sendConn(c,{t:'hello',name:Net.myName,playerId:Net.playerId});
    sendHello();
-   // retry hello a few times in case the first is lost
    let tries=0;const hi=setInterval(()=>{if(Net.started||tries++>4){clearInterval(hi);return}sendHello()},800);
    setNetStatus('Connected — waiting for the lobby…');
    startGuestHeartbeat(c);
@@ -296,13 +295,9 @@ function startMatch(){
  const used=new Set(Net.roster.map(e=>e.char).filter(Boolean));
  Net.roster.forEach(e=>{if(!e.char)e.char=pickFreeChar(used);used.add(e.char)});
  const humans=Net.roster.length,bots=Net.bots;
- S=makeState(Net.goal,humans+bots,humans);
- for(let i=0;i<humans;i++){S.players[i].name=Net.roster[i].name;S.players[i].char=Net.roster[i].char;S.players[i].bot=false}
- for(let i=humans;i<S.players.length;i++)S.players[i].bot=true;
- World.build(S.seed,S.quikSlot);PK.clear();
- Net.started=true;
- log('🛫 The board is pinned up — the jet is boarding.');
- Hooks.sync(true);
+ const defs=Net.roster.map(e=>({name:e.name,char:e.char}));
+ Net.myIdx=0;
+ initGame(defs,{goal:Net.goal,bots:Net.bots});
  for(let i=1;i<Net.conns.length;i++)sendConn(Net.conns[i],{t:'begin',idx:i,s:pubState(true),pk:Array.from(PK.values())});
  enterGame(false);
 }
