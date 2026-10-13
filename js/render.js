@@ -37,7 +37,7 @@ function getFace(charId){
  // The previous circular crop was intended for a flat decal and left the face floating in front.
  const c=document.createElement('canvas');c.width=256;c.height=256;
  const g=c.getContext('2d');g.fillStyle='#d8ad87';g.fillRect(0,0,c.width,c.height);
- const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;faceTex[charId]=t;
+ const t=new THREE.CanvasTexture(c);if(THREE.sRGBEncoding!==undefined)t.encoding=THREE.sRGBEncoding;faceTex[charId]=t;
  if(charId){const im=new Image();im.onload=()=>{
    g.fillStyle='#d8ad87';g.fillRect(0,0,c.width,c.height);
    const s=Math.max(c.width/im.width,c.height/im.height);
