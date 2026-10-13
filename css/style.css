@@ -9,7 +9,17 @@ button{font-family:inherit}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 24px 40px}
 .splash-logo{width:min(100%,560px,30vh);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;background:#000;overflow:hidden}
-.splash-logo img{display:block;width:100%;height:100%;object-fit:fill}
+.logo-cube-scene{width:100%;height:100%;display:grid;place-items:center;perspective:850px;perspective-origin:50% 45%}
+.logo-cube{position:relative;width:160px;height:160px;transform-style:preserve-3d;animation:logoCubeSpin 11s linear infinite}
+.logo-face{position:absolute;inset:0;background-image:url("../big%20con%20logo.png");background-size:cover;background-position:center;backface-visibility:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 0 18px rgba(0,0,0,.16)}
+.logo-face.front{transform:translateZ(80px)}
+.logo-face.back{transform:rotateY(180deg) translateZ(80px)}
+.logo-face.right{transform:rotateY(90deg) translateZ(80px)}
+.logo-face.left{transform:rotateY(-90deg) translateZ(80px)}
+.logo-face.top{transform:rotateX(90deg) translateZ(80px)}
+.logo-face.bottom{transform:rotateX(-90deg) translateZ(80px)}
+@keyframes logoCubeSpin{from{transform:rotateX(-18deg) rotateY(0deg) scale(.78)}to{transform:rotateX(342deg) rotateY(360deg) scale(.78)}}
+@media(max-width:520px){.logo-cube{animation-name:logoCubeSpinSmall}.logo-face{border-width:1px}@keyframes logoCubeSpinSmall{from{transform:rotateX(-18deg) rotateY(0deg) scale(.53)}to{transform:rotateX(342deg) rotateY(360deg) scale(.53)}}}
 .setupcard{background:#111413;max-width:720px;width:100%;border:2px solid #168388;padding:28px 32px;box-shadow:0 24px 80px rgba(0,0,0,.75);margin-top:10px}
 .bigtitle{font-size:34px;font-weight:900;letter-spacing:4px;background:#168388;color:#fff;display:inline-block;padding:8px 16px;margin:0 0 8px}
 .tag{font-size:16px;font-style:italic;color:burlywood;margin:10px 0 4px}
