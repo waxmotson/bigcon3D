@@ -6,6 +6,11 @@ const Keys={};
 const Game={spec:-1,started:false,locked:false,lanes:[],space:false};
 const SENS=.0022;
 
+function hostStep(dt){
+ if(typeof botsStep==='function')botsStep(dt);
+ if(typeof gameStep==='function')gameStep(dt);
+}
+
 function curW(){return Inv.slots[Inv.cur]}
 function selectWeapon(idx){
  const k=Inv.slots.findIndex(s=>s.id===WORDER[idx]);if(k<0||k===Inv.cur)return;
@@ -33,7 +38,7 @@ Game.onMsg=function(m){
   case 'banner':UI.banner(m);SFX.play(m.kind==='raid'?'zone':m.kind==='zone'?'zone':'event');break;
   case 'feed':{
    const a=m.a>=0?S.players[m.a]:null,b=S.players[m.b];if(!b)break;
-   UI.feed((a?'<b style="color:'+a.color+'">'+esc(a.name)+'</b> ':'')+'<span style="color:#ff6b5e">'+(a?'busted':'was busted —')+'</span> <b style="color:'+b.color+'">'+esc(b.name)+'</b> <span style="color:#9ad">'+esc(m.w)+(m.hs?' 🎯':'')+'</span>');
+   UI.feed((a?'<b style=\"color:'+a.color+'\">'+esc(a.name)+'</b> ':'')+'<span style=\"color:#ff6b5e\">'+(a?'busted':'was busted —')+'</span> <b style=\"color:'+b.color+'\">'+esc(b.name)+'</b> <span style=\"color:#9ad\">'+esc(m.w)+(m.hs?' 🎯':'')+'</span>');
    break}
   case 'hurt':$('vig').classList.add('hurt');setTimeout(()=>$('vig').classList.remove('hurt'),160);SFX.play('hurt');R.shake=Math.max(R.shake,.12);break;
   case 'hitok':UI.hitmark(m.kill?'kill':m.hs?'hs':'');SFX.play(m.kill?'kill':m.hs?'hs':'hit');break;
@@ -198,7 +203,7 @@ function update(dt){
     Me.pkSkip[o.id]=nowM+1500;act('pick',{id:o.id});if(o.k==='cash')SFX.play('cash');else SFX.play('pick');
    }}
  }
- if(Me.mode!=='ground'){UI.hint(Me.mode==='jet'?'<div class="hn">PRESS <span class="hk">SPACE</span> TO JUMP</div><div class="hs">land near an exhibit — the jet covers the whole board</div>':'');UI.cap(null);Me.cap=0}
+ if(Me.mode!=='ground'){UI.hint(Me.mode==='jet'?'<div class=\"hn\">PRESS <span class=\"hk\">SPACE</span> TO JUMP</div><div class=\"hs\">land near an exhibit — the jet covers the whole board</div>':'');UI.cap(null);Me.cap=0}
  // publish
  let fl=0;if(Keys.KeyC&&Me.mode==='ground')fl|=1;if(Me.sprinting)fl|=2;if(Me.firing||Me.flashT>0)fl|=4;if(Me.mode==='air')fl|=8|(Me.y<World.groundAt(Me.x,Me.z,Me.y)+38?32:0);if(Me.mode==='jet')fl|=16;
  q.x=Me.x;q.y=Me.y;q.z=Me.z;q.yaw=Me.yaw;q.pitch=Me.pitch;q.w=curW()?curW().id:'stapler';q.fl=fl;
@@ -208,21 +213,21 @@ function interact(dt,p,T){
  const me=Net.myIdx,n=nodeAt(Me.x,Me.z,NODE_R);
  if(!n||Me.y>3.5){UI.hint('');UI.cap(null);Me.cap=0;return}
  const ow=S.owner[n.id],live=zoneLive(n),mine=ow===me;
- let h='<div class="hn" style="color:'+(TYPE_COLORS[n.type]||'#fff')+'">'+(n.icon||'')+' '+esc(n.name.join(' '))+'</div><div class="hs">'+esc(n.sub||'')+'</div>';
- h+='<div style="font-size:12px;color:#ccd">'+esc(n.sp)+'</div>';
+ let h='<div class=\"hn\" style=\"color:'+(TYPE_COLORS[n.type]||'#fff')+'\">'+(n.icon||'')+' '+esc(n.name.join(' '))+'</div><div class=\"hs\">'+esc(n.sub||'')+'</div>';
+ h+='<div style=\"font-size:12px;color:#ccd\">'+esc(n.sp)+'</div>';
  let need=0;
- if(!live)h+='<div style="color:#ff6b5e;font-weight:800">🚔 LOCKED DOWN — outside the dragnet</div>';
- else if(mine){h+='<div style="color:#7fe08d;font-weight:800">YOURS · pays $'+n.income+' per tick</div>';
-  if(n.id==='quik')h+='<div>press <span class="hk">Q</span> for the shop</div>';if(n.id==='sisy'||n.id==='asics')h+='<div>press <span class="hk">Q</span> to '+(n.id==='sisy'?'push':'jog')+'</div>'}
+ if(!live)h+='<div style=\"color:#ff6b5e;font-weight:800\">🚔 LOCKED DOWN — outside the dragnet</div>';
+ else if(mine){h+='<div style=\"color:#7fe08d;font-weight:800\">YOURS · pays $'+n.income+' per tick</div>';
+  if(n.id==='quik')h+='<div>press <span class=\"hk\">Q</span> for the shop</div>';if(n.id==='sisy'||n.id==='asics')h+='<div>press <span class=\"hk\">Q</span> to '+(n.id==='sisy'?'push':'jog')+'</div>'}
  else{
   const base=seizeListPrice(me,n),take=ow!=null,cost=take?takeoverCost(me,n.id,base):base;
   const back=S.owner.back===me?Math.min(3,p.intel):0,aff=p.money+back>=cost;
-  h+='<div style="font-weight:800">'+(ow!=null&&S.players[ow]?'held by <span style="color:'+S.players[ow].color+'">'+esc(S.players[ow].name)+'</span> · ':'unowned · ')+'<span style="color:'+(aff?'#7fe08d':'#ff6b5e')+'">'+(take?'TAKEOVER':'SEIZE')+' $'+cost+'</span>'+(back?' (+Intel via Backroom Deals)':'')+'</div>';
-  if(n.id==='qantas'&&T<QANTAS_GROUND)h+='<div style="color:#ff6b5e">grounded for '+Math.ceil(QANTAS_GROUND-T)+'s</div>';
-  else if(p.cuffs>T)h+='<div style="color:#ff6b5e">⛓ you are in handcuffs</div>';
-  else if(!aff)h+='<div style="color:#ff6b5e">you can\'t afford it</div>';
-  else{h+='<div>hold <span class="hk">E</span>'+(take?' · <span class="hk">B</span> bug it':'')+'</div>';need=take?2:1.2}
-  if(take&&!aff)h+='<div>press <span class="hk">B</span> to bug it (1🛈)</div>';
+  h+='<div style=\"font-weight:800\">'+(ow!=null&&S.players[ow]?'held by <span style=\"color:'+S.players[ow].color+'\">'+esc(S.players[ow].name)+'</span> · ':'unowned · ')+'<span style=\"color:'+(aff?'#7fe08d':'#ff6b5e')+'\">'+(take?'TAKEOVER':'SEIZE')+' $'+cost+'</span>'+(back?' (+Intel via Backroom Deals)':'')+'</div>';
+  if(n.id==='qantas'&&T<QANTAS_GROUND)h+='<div style=\"color:#ff6b5e\">grounded for '+Math.ceil(QANTAS_GROUND-T)+'s</div>';
+  else if(p.cuffs>T)h+='<div style=\"color:#ff6b5e\">⛓ you are in handcuffs</div>';
+  else if(!aff)h+='<div style=\"color:#ff6b5e\">you can\'t afford it</div>';
+  else{h+='<div>hold <span class=\"hk\">E</span>'+(take?' · <span class=\"hk\">B</span> bug it':'')+'</div>';need=take?2:1.2}
+  if(take&&!aff)h+='<div>press <span class=\"hk\">B</span> to bug it (1🛈)</div>';
  }
  UI.hint(h);
  if(need&&Keys.KeyE&&T>Me.capLock){Me.cap+=dt;UI.cap(Me.cap/need);if(Me.cap>=need){act('seize',{nid:n.id});Me.cap=0;Me.capLock=T+.8;UI.cap(null)}}
