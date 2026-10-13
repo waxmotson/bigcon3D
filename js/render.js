@@ -37,7 +37,7 @@ function getFace(charId){
  const g=c.getContext('2d');g.fillStyle='#d8ad87';g.fillRect(0,0,c.width,c.height);
  const t=new THREE.CanvasTexture(c);
  // Sphere UVs span the whole image; offset U so the image centre faces forward (-Z).
- t.wrapS=THREE.RepeatWrapping;t.offset.x=.25;
+ t.wrapS=THREE.RepeatWrapping;t.offset.x=.75;
  if(THREE.sRGBEncoding!==undefined)t.encoding=THREE.sRGBEncoding;
  faceTex[charId]=t;
  if(charId){
