@@ -239,6 +239,7 @@ function bust(vi,by,wid,head){
  let lost=0;Object.keys(S.owner).forEach(id=>{if(S.owner[id]===vi){delete S.owner[id];delete S.bugs[id];lost++}});
  Object.keys(S.bugs).forEach(id=>{if(S.bugs[id]===vi)delete S.bugs[id]});
  const wn=wid&&WEAPONS[wid]?WEAPONS[wid].n:(wid==='nade'?'MARGIN CALL':wid==='zone'?'THE DRAGNET':'the regulators');
+ v.eliminatedBy=killer?killer.name:wn;
  log('💀 '+(killer?killer.name+' busts '+v.name+' with '+wn+(head?' (headshot)':'')+'.':v.name+' was busted by '+wn+'.')+(lost?' '+lost+' exhibit'+(lost>1?'s':'')+' fall back to the regulators.':''));
  emit({t:'feed',a:killer?by:-1,b:vi,w:wn,hs:head?1:0});
  emitTo(vi,{t:'busted',by:killer?by:-1,w:wn});
