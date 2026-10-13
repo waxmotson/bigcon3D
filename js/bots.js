@@ -5,7 +5,13 @@
 const BR=[];
 const BOT_WALK=7.0;
 function botBrain(i){
- return BR[i]||(BR[i]={land:null,ejDist:70+Math.random()*45,vy:0,tgt:null,capT:0,foe:-1,foeT:0,nextShot:0,burst:0,mag:0,reload:0,strafe:Math.random()<.5?1:-1,strafeT:0,lx:0,lz:0,stuckT:0,unstick:0,uh:0,skill:.35+Math.random()*.45,aimErr:1,lootId:0,thinkT:Math.random()*.5,sellT:0,grenT:8+Math.random()*20,hold:0});
+ let b=BR[i];
+ if(!b){
+  // The first three bots in each lobby are tougher rivals; the rest keep the usual skill range.
+  const elite=i>=S.humans&&i<S.humans+3;
+  b=BR[i]={land:null,ejDist:70+Math.random()*45,vy:0,tgt:null,capT:0,foe:-1,foeT:0,nextShot:0,burst:0,mag:0,reload:0,strafe:Math.random()<.5?1:-1,strafeT:0,lx:0,lz:0,stuckT:0,unstick:0,uh:0,skill:elite ? .86+Math.random()*.12 : .35+Math.random()*.45,aimErr:elite ? .65 : 1,lootId:0,thinkT:Math.random()*.5,sellT:0,grenT:8+Math.random()*20,hold:0,elite};
+ }
+ return b;
 }
 const LANDED=[];
 function botPickLand(b){
