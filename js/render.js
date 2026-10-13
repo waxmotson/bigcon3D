@@ -33,9 +33,18 @@ function pickupTex(o){
 const faceTex={};
 function getFace(charId){
  if(faceTex[charId])return faceTex[charId];
- const c=document.createElement('canvas');c.width=c.height=128;const t=new THREE.CanvasTexture(c);faceTex[charId]=t;
- const g=c.getContext('2d');g.fillStyle='#222';g.beginPath();g.arc(64,64,62,0,7);g.fill();
- if(charId){const im=new Image();im.onload=()=>{g.save();g.beginPath();g.arc(64,64,60,0,7);g.clip();const s=Math.max(128/im.width,128/im.height);g.drawImage(im,64-im.width*s/2,0,im.width*s,im.height*s);g.restore();g.lineWidth=5;g.strokeStyle='#fff';g.beginPath();g.arc(64,64,60,0,7);g.stroke();t.needsUpdate=true};im.src=charSrc(charId)}
+ // Use a full rectangular UV texture: SphereGeometry wraps it around the entire head.
+ // The previous circular crop was intended for a flat decal and left the face floating in front.
+ const c=document.createElement('canvas');c.width=256;c.height=256;
+ const g=c.getContext('2d');g.fillStyle='#d8ad87';g.fillRect(0,0,c.width,c.height);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;faceTex[charId]=t;
+ if(charId){const im=new Image();im.onload=()=>{
+   g.fillStyle='#d8ad87';g.fillRect(0,0,c.width,c.height);
+   const s=Math.max(c.width/im.width,c.height/im.height);
+   const iw=im.width*s,ih=im.height*s;
+   g.drawImage(im,(c.width-iw)/2,(c.height-ih)/2,iw,ih);
+   t.needsUpdate=true;
+  };im.onerror=()=>{t.needsUpdate=true};im.src=charSrc(charId)}
  return t;
 }
 function corkTexture(){
@@ -191,18 +200,9 @@ function getAvatar(i){
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,.95,10),new THREE.MeshLambertMaterial({color:col}));body.position.y=.92;g.add(body);
  const legs=new THREE.Mesh(new THREE.CylinderGeometry(.24,.2,.5,8),new THREE.MeshLambertMaterial({color:0x222a2a}));legs.position.y=.25;g.add(legs);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),new THREE.MeshLambertMaterial({color:0xe8bf98}));head.position.y=1.6;g.add(head);
- // Face rendered straight onto the front of the head (circular texture on a plane). Falls back to sprite if anything fails.
- try{
-  const faceMat=new THREE.MeshBasicMaterial({map:getFace(p.char),transparent:true,fog:false,side:THREE.DoubleSide,depthWrite:false});
-  const face=new THREE.Mesh(new THREE.PlaneGeometry(.38,.38),faceMat);
-  face.position.set(0,1.62,-.185);
-  face.rotation.y=Math.PI;
-  g.add(face);
- }catch(e){
-  console.warn('face decal failed, using sprite',e);
-  const face=new THREE.Sprite(new THREE.SpriteMaterial({map:getFace(p.char),transparent:true,fog:false}));
-  face.scale.set(.85,.85,1);face.position.y=1.62;g.add(face);
- }
+ // Map the selected character image directly onto the complete head sphere, not a front-facing decal.
+ head.material=new THREE.MeshBasicMaterial({map:getFace(p.char),color:0xffffff,fog:false});
+ head.material.map.needsUpdate=true;
  const gun=new THREE.Mesh(new THREE.BoxGeometry(.08,.1,.55),new THREE.MeshLambertMaterial({color:0xcccccc}));gun.position.set(.3,1.0,-.35);g.add(gun);
  const tag=textSprite(p.name,'#fff',{w:256,h:48,sw:5,sh:.95,font:'bold 26px system-ui'});tag.position.y=2.35;g.add(tag);
  const chute=new THREE.Mesh(new THREE.SphereGeometry(2.6,14,8,0,6.283,0,1.45),new THREE.MeshLambertMaterial({color:0xe0001b,side:THREE.DoubleSide,transparent:true,opacity:.92}));chute.position.y=4.4;chute.visible=false;g.add(chute);
@@ -293,7 +293,8 @@ R.render=function(dt,v){
  R.shake=Math.max(0,R.shake-dt*2.2);
  const sh=R.shake*(Math.random()-.5)*.4;
  cam.position.set(cx+sh,cy+v.bob+sh,cz);
- cam.rotation.y=yaw;cam.rotation.x=pitch+v.recoil*.012;cam.rotation.z=v.roll||0;
+ // Player yaw is positive toward +X (dirFrom/movement convention); Three.js camera yaw uses the opposite sign.
+ cam.rotation.y=-yaw;cam.rotation.x=pitch+v.recoil*.012;cam.rotation.z=v.roll||0;
  cam.fov=v.fov;cam.updateProjectionMatrix();
  // viewmodel pose
  const k=v.ads?1:0;R.vk=(R.vk||0)+(k-(R.vk||0))*Math.min(1,dt*14);
