@@ -7,7 +7,7 @@ const TICK_SEC=20,EVENT_SEC=38,QANTAS_GROUND=90,JET_WAIT=3,JET_SPD=36,JET_Y=130;
 const ZONE=[{wait:70,shrink:40,r:215},{wait:55,shrink:38,r:150},{wait:45,shrink:34,r:95},{wait:38,shrink:28,r:55},{wait:30,shrink:24,r:28},{wait:20,shrink:20,r:7}];
 const GOAL_MIN=40,GOAL_MAX=999,GOAL_DEF=250;
 // Single editable map: bot display name -> character ID in js/data.js.
-// Use null for a random available character image.
+// Use null for a blank face. Only the first three (elite) bots are given mapped faces.
 const BOT_CHARACTERS={
  'Seth Wegrzyn': "thebigwegrzyn",
  'Aidan Newling':'calvinathanasius',
@@ -132,19 +132,22 @@ function zoneLive(n){const z=S.zone;return !z||Math.hypot(n.wx-z.cx,n.wz-z.cz)<=
 function newPlayer(d,i){return{name:d.name,color:playerColor(i),char:d.char||null,bot:!!d.bot,money:15,intel:2,cortisol:0,raided:0,hp:100,armor:0,alive:true,dc:false,kills:0,heatAt:0,cd:{},dossierUntil:0,slipUntil:0,slipSpent:false,speedUntil:0,cuffs:0,spyUntil:0,spawnProt:0,streak:0,lastKillT:-99}}
 function initGame(defs,opts){
  const bots=Math.max(0,Math.min(MAXENT-defs.length,opts.bots|0));
- const used=new Set(defs.map(d=>d.char));const names=shuffle(BOT_NAMES);
- const all=defs.map(d=>({name:d.name,char:d.char,bot:false}));
- const normalise=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
- for(let b=0;b<bots;b++){
-  const name=names[b%names.length];
-  const exact=CHARS.find(c=>normalise(c.name)===normalise(name)||normalise(c.id)===normalise(name));
-  const preferred=charMeta(BOT_CHARACTERS[name])||exact;
-  let ch=preferred&&!used.has(preferred.id)?preferred:null;
-  if(!ch){const free=CHARS.filter(c=>!used.has(c.id));ch=free.length?free[Math.floor(Math.random()*free.length)]:CHARS[Math.floor(Math.random()*CHARS.length)]}
-  used.add(ch.id);
-  all.push({name,char:ch.id,bot:true});
- }
- const quikSlot=Math.floor(Math.random()*QUIK_SLOTS.length),seed=(Math.random()*1e9)|0;
+ // Put mapped-face characters first, so the first three bots (the elite bots)
+// are eligible to have faces. All other bots are deliberately blank.
+  const faced=shuffle(BOT_NAMES.filter(name=>BOT_CHARACTERS[name]));
+  const blank=shuffle(BOT_NAMES.filter(name=>!BOT_CHARACTERS[name]));
+  const names=faced.concat(blank);
+  const used=new Set(defs.map(d=>d.char).filter(Boolean));
+  const all=defs.map(d=>({name:d.name,char:d.char||null,bot:false}));
+  for(let b=0;b<bots;b++){
+   const name=names[b%names.length];
+   // Never substitute a random face: null mappings stay blank.
+   const preferred=b<3?charMeta(BOT_CHARACTERS[name]):null;
+   const ch=preferred&&!used.has(preferred.id)?preferred:null;
+   if(ch)used.add(ch.id);
+   all.push({name,char:ch?ch.id:null,bot:true});
+  }
+  const quikSlot=Math.floor(Math.random()*QUIK_SLOTS.length),seed=(Math.random()*1e9)|0;
  const a=Math.random()*Math.PI*2,half=270;
  S={players:all.map(newPlayer),owner:{},bugs:{},seizeCount:{},deck:shuffle(CARDS.map(c=>c.id)),discard:[],mood:'CALM',wire:'the board is pinned up — the jet is boarding',
   goal:clampGoal(opts.goal),t:0,phase:'jet',tick:0,tPlay:0,nextTick:1e9,nextEvent:1e9,zone:null,fx:[],log:[],chat:[],logN:0,chatN:0,over:false,winner:-1,quikSlot,seed,
