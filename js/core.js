@@ -23,7 +23,7 @@ function clampGoal(v){const n=Math.round(Number(v)||0);if(!n)return GOAL_DEF;ret
 function playerColor(i){return i<PCOLORS.length?PCOLORS[i]:'hsl('+((i*47)%360)+',80%,62%)'}
 function pname(i){return S.players[i].name}
 function alive(i){const p=S&&S.players[i];return !!(p&&p.alive)}
-function esc(s){return String(s).replace(/[&<>\"']/g,m=>({'&':'&','<':'<','>':'>','\"':'"',"'":'&#39;'}[m]))}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function shuffle(a){const r=a.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=r[i];r[i]=r[j];r[j]=t}return r}
 function log(t){if(!S)return;S.log.push(t);S.logN=(S.logN|0)+1;if(S.log.length>120)S.log.shift()}
 function fx(x,y,t,c,big){if(!S||Net.role!=='host')return;S.fx.push({id:++fxSeq,x,y,t,c,b:big?1:0});if(S.fx.length>36)S.fx.shift()}
@@ -48,7 +48,6 @@ function addCortisol(i,n,why,ev){
  fxAt(i,(n>0?'🔥+'+n:'🔥'+n),'#ffa94d');
  if(p.cortisol>=8)raid(i);
 }
-const addCort=addCortisol; // alias used by event cards in data.js
 /* The raid is the one thing that can end a run: two assets seized, the books fined, the intel network burned,
    and ten seconds in handcuffs — slowed to a crawl with your weapons locked. */
 function raid(i){
@@ -240,11 +239,11 @@ function tickStep(){
 
 /* ================= EVENTS ================= */
 function drawCard(){
- if(!S.deck.length){S.deck=shuffle(S.discard.slice());S.discard=[];log('🃏 The rumor deck is reshuffled.')}
+ if(!S.deck.length){S.deck=shuffle(S.discard.slice());S.discard=[];log('🎴 The rumor deck is reshuffled.')}
  const id=S.deck.pop();S.discard.push(id);
  if(!S.deck.length){S.deck=shuffle(S.discard.slice());S.discard=[]}
  S.nextId=S.deck[S.deck.length-1];
- const c=CARDBYID[id];log('🃏 EVENT — '+c.title);return c;
+ const c=CARDBYID[id];log('🎴 EVENT — '+c.title);return c;
 }
 async function runEvent(){
  if(S.eventBusy||S.over)return;S.eventBusy=true;
@@ -274,100 +273,210 @@ function zonePick(){
 }
 function seizeOutside(){
  const z=S.zone;let n=0;
- NODES.forEach(nd=>{if(Math.hypot(nd.wx-z.cx,nd.wz-z.cz)>z.r){if(S.owner[nd.id]!=null){delete S.owner[nd.id];delete S.bugs[nd.id];n++}}});
- if(n)log('🚨 The dragnet seizes '+n+' exhibit'+(n>1?'s':'')+' outside the ring.');
+ NODES.forEach(nd=>{if(Math.hypot(nd.wx-z.cx,nd.wz-z.cz)>z.r-3&&S.owner[nd.id]!=null){delete S.owner[nd.id];delete S.bugs[nd.id];n++;fx(nd.x,nd.y-70,'🚔 SEIZED','#ff6b5e')}});
+ if(n){log('🚔 THE DRAGNET closes — the regulators seize '+n+' exhibit'+(n>1?'s':'')+' outside the safe zone.');}
 }
 function zoneStep(dt){
- if(!S.zone||S.over)return;
- const z=S.zone;
- if(S.t>=z.until){
-  if(z.st==='wait'){z.st='shrink';z.t0=S.t;z.until=S.t+ZONE[z.ph].shrink;z.fr=z.r;z.fcx=z.cx;z.fcz=z.cz;zonePick();log('🚨 DRAGNET CLOSING — ring '+(z.ph+1)+'/'+ZONE.length);}
-  else if(z.ph<ZONE.length-1){z.ph++;z.st='wait';z.t0=S.t;z.until=S.t+ZONE[z.ph].wait;seizeOutside();log('🎯 Dragnet settled — next close in '+ZONE[z.ph].wait+'s');}
-  else{z.done=true;seizeOutside();}
+ const z=S.zone;if(!z||z.done)return;
+ if(z.st==='wait'&&S.t>=z.until){
+  z.st='shrink';z.fr=z.r;z.fcx=z.cx;z.fcz=z.cz;z.t0=S.t;z.until=S.t+ZONE[z.ph].shrink;
+  banner('THE DRAGNET IS CLOSING','Get inside the circle — outside it your Cortisol and health bleed out','#ff6b5e','🚨','zone');
+ }else if(z.st==='shrink'){
+  const k=Math.min(1,(S.t-z.t0)/ZONE[z.ph].shrink);
+  z.r=lerp(z.fr,z.tr,k);z.cx=lerp(z.fcx,z.tcx,k);z.cz=lerp(z.fcz,z.tcz,k);
+  if(k>=1){
+   z.st='wait';z.ph++;seizeOutside();
+   if(z.ph>=ZONE.length){z.done=true;z.until=1e9}
+   else{z.until=S.t+ZONE[z.ph].wait;zonePick();banner('NEXT DRAGNET MARKED','The circle holds for '+ZONE[z.ph].wait+'s — then it closes again','#168388','🎯','zone');if(z.ph%2===1)airdrop(4,'SUPPLY DROP')}
+   sync(true);
+  }
  }
- if(z.st==='shrink'){
-  const k=Math.min(1,(S.t-z.t0)/(z.until-z.t0));
-  z.cx=lerp(z.fcx,z.tcx,k);z.cz=lerp(z.fcz,z.tcz,k);z.r=lerp(z.fr,z.tr,k);
+ // outside the circle: health bleeds, Cortisol climbs
+ z.acc=(z.acc||0)+dt;
+ if(z.acc>=.5){
+  const step=z.acc;z.acc=0;const rate=1.6+z.ph*1.3;
+  S.players.forEach((p,i)=>{
+   if(!p.alive||!P[i]||(P[i].fl&16))return;
+   if(Math.hypot(P[i].x-z.cx,P[i].z-z.cz)>z.r){
+    applyDamage(i,rate*step,-1,'zone',false);
+    p.zt=(p.zt||0)+step;if(p.zt>=3){p.zt=0;addCortisol(i,1,'outside the dragnet')}
+   }
+  });
  }
- // damage anyone outside
- S.players.forEach((p,i)=>{if(!p.alive)return;const q=P[i];if(!q)return;if(Math.hypot(q.x-z.cx,q.z-z.cz)>z.r){applyDamage(i,8*dt,-1,'zone',false)}});
+}
+
+/* ================= GRENADES ================= */
+function throwGrenade(pi,o,v){
+ const g={id:++grSeq,pi,x:o[0],y:o[1],z:o[2],vx:v[0],vy:v[1],vz:v[2],t:0};GR.push(g);
+ emit({t:'gren',id:g.id,i:pi,o:[g.x,g.y,g.z],v:[g.vx,g.vy,g.vz]});
+}
+function stepGrenade(g,dt){
+ g.vy-=22*dt;
+ const nx=g.x+g.vx*dt,ny=g.y+g.vy*dt,nz=g.z+g.vz*dt;
+ const dx=nx-g.x,dy=ny-g.y,dz=nz-g.z,len=Math.hypot(dx,dy,dz)||1e-6;
+ const hit=World.ray(g.x,g.y,g.z,dx/len,dy/len,dz/len,len+.15);
+ if(hit<len+.1&&len>1e-5){g.vx*=-.35;g.vz*=-.35;g.vy*=-.3;g.x+=dx/len*Math.max(0,hit-.2);g.y+=dy/len*Math.max(0,hit-.2);g.z+=dz/len*Math.max(0,hit-.2)}
+ else{g.x=nx;g.y=ny;g.z=nz}
+ const gr=World.groundAt(g.x,g.z,g.y+1);
+ if(g.y<gr+.2){g.y=gr+.2;g.vy=Math.abs(g.vy)*.4;g.vx*=.7;g.vz*=.7}
+ g.x=Math.max(-HX,Math.min(HX,g.x));g.z=Math.max(-HZ,Math.min(HZ,g.z));
+}
+function grenadesStep(dt){
+ for(let k=GR.length-1;k>=0;k--){
+  const g=GR[k];g.t+=dt;stepGrenade(g,dt);
+  if(g.t>=GREN.fuse){
+   GR.splice(k,1);emit({t:'boom',id:g.id,x:g.x,y:g.y,z:g.z});
+   S.players.forEach((p,i)=>{
+    if(!p.alive||!P[i])return;
+    const d=Math.hypot(P[i].x-g.x,(P[i].y+.9)-g.y,P[i].z-g.z);if(d>GREN.rad)return;
+    if(World.ray(g.x,g.y+.3,g.z,(P[i].x-g.x)/d,(P[i].y+.9-g.y)/d,(P[i].z-g.z)/d,d)<d-.6)return; // cover blocks the blast
+    let dmg=GREN.dmg*(1-d/GREN.rad)+8;if(i===g.pi)dmg*=.55;
+    applyDamage(i,dmg,g.pi,'nade',false);
+   });
+  }
+ }
+}
+
+/* ================= CLIENT CLAIMS (host validates) ================= */
+function handleShot(pi,m){
+ const p=S.players[pi],W=m&&WEAPONS[m.w];
+ if(!p||!p.alive||S.over||!W||p.cuffs>S.t)return;
+ if(P[pi]&&P[pi].fl&16)return;
+ if(p.lastShot&&S.t-p.lastShot<W.rof*.5)return;p.lastShot=S.t;
+ emit({t:'shot',i:pi,w:m.w,o:m.o,e:m.e});
+ const hits=(m.h||[]).slice(0,W.pel);
+ hits.forEach(h=>{
+  const ti=h[0],head=!!h[1];if(ti===pi||!alive(ti))return;
+  const a=P[pi],b=P[ti];if(!a||!b)return;
+  const d=Math.hypot(a.x-b.x,a.z-b.z);if(d>W.range*1.2+3)return;
+  const fall=d>W.range*.6?1-(d-W.range*.6)/(W.range*.4)*.35:1;
+  applyDamage(ti,W.dmg*(head?W.hm:1)*fall,pi,m.w,head);
+ });
+}
+function atNode(pi,nid,slack){const n=NMAP[nid],q=P[pi];return !!(n&&q&&Math.hypot(q.x-n.wx,q.z-n.wz)<=NODE_R+(slack||2.5)&&q.y<4)}
+function ready(p,k,sec){if((p.cd[k]||0)>S.t)return false;p.cd[k]=S.t+sec;return true}
+function toast(pi,msg){emitTo(pi,{t:'sys',msg})}
+
+function doSeize(pi,nid){
+ const p=S.players[pi],n=NMAP[nid];if(!p||!p.alive||!n||S.over)return;
+ const prev=S.owner[nid];if(prev===pi)return;
+ if(!atNode(pi,nid)){toast(pi,'Get closer to '+n.name.join(' '));return}
+ if(!zoneLive(n)){toast(pi,'The regulators have this one locked down — outside the dragnet.');return}
+ if(nid==='qantas'&&S.t<QANTAS_GROUND){toast(pi,'Qantas is grounded for the first '+QANTAS_GROUND+'s — the jet is still at the gate.');return}
+ if(p.cuffs>S.t){toast(pi,'You are in handcuffs.');return}
+ let base=seizeListPrice(pi,n);
+ let slipUsed=false;
+ if(p.slipUntil>S.t&&!p.slipSpent&&S.owner.f1===pi){base=Math.max(1,base-2);slipUsed=true}
+ const isTake=prev!=null;
+ const cost=isTake?takeoverCost(pi,nid,base):base;
+ const useBack=S.owner.back===pi?Math.min(3,p.intel):0;
+ if(p.money+useBack<cost){toast(pi,"You can't afford that — $"+cost+' needed.');return}
+ let cash=Math.min(p.money,cost),useInt=cost-cash;
+ p.money-=cash;p.intel-=useInt;if(slipUsed)p.slipSpent=true;
+ if(useInt>0)fxAt(pi,'🛈−'+useInt,'#55c1ff');if(cash>0)fxAt(pi,'−$'+cash,'#ff6b5e');
+ if(isTake){
+  if(alive(prev)){S.players[prev].money+=n.cost;fxAt(prev,'+$'+n.cost,'#7fe08d');emitTo(prev,{t:'sys',msg:'🚨 '+p.name+' muscled in on '+n.name.join(' ')})}
+  if(S.owner.accc===prev&&p.money>=2){p.money-=2;if(alive(prev))S.players[prev].money+=2}
+ }
+ S.owner[nid]=pi;S.seizeCount[nid]=(S.seizeCount[nid]||0)+1;delete S.bugs[nid];
+ log('📝 '+p.name+(isTake?' muscles in on ':' seizes ')+n.name.join(' ')+(isTake?' ('+pname(prev)+' loses it)':'')+'.');
+ fx(n.x,n.y-64,'📝 SEIZED',p.color);
+ emit({t:'seized',nid,i:pi,take:isTake?1:0});
+ if(nid==='bond')giveIntel(pi,2,'desk gossip flows');
+ if(nid==='leak')giveIntel(pi,1,'the leak pays');
+ S.players.forEach((pl,j)=>{if(j!==pi&&S.owner.photo===j)giveIntel(j,1,'the Photo Wall catches it')});
+ addCortisol(pi,isTake?2:1,isTake?'hostile takeover':'hands are getting dirty');
+ sync(true);winCheck();
+}
+function doBug(pi,nid){
+ const p=S.players[pi],n=NMAP[nid];
+ if(!n||S.owner[nid]==null||S.owner[nid]===pi||S.bugs[nid]!=null||!atNode(pi,nid)){toast(pi,'Stand at a rival node that is not already bugged.');return}
+ const cost=(S.owner.insider===pi)?0:1;if(p.intel<cost){toast(pi,'Not enough Intel.');return}
+ p.intel-=cost;S.bugs[nid]=pi;fx(n.x,n.y-60,'🐛 PLANTED','#55c1ff');log('🐛 '+p.name+' plants a bug on '+n.name.join(' ')+'.');sync();
+}
+const QUIK_PRICES={hp:[3,'a bandage'],armor:[5,'a vest'],ammo:[2,'ammo'],gren:[4,'a MARGIN CALL']};
+/* every ability a player can fire — cooldown stands in for "once per turn" */
+function doAction(pi,act,m){
+ const p=S.players[pi];if(!p||!p.alive||S.over)return;const own=id=>S.owner[id]===pi;m=m||{};
+ const tgt=()=>{const t=m.target;if(t==null||t===pi||!alive(t)){toast(pi,'Pick a live rival.');return null}return t};
+ const spend=n=>{if(p.money<n){toast(pi,'Costs $'+n+'.');return false}p.money-=n;fxAt(pi,'−$'+n,'#ff6b5e');return true};
+ const needIntel=n=>{if(p.intel<n){toast(pi,'Needs '+n+' Intel.');return false}p.intel-=n;fxAt(pi,'🛈−'+n,'#55c1ff');return true};
+ if(act==='seize')return doSeize(pi,m.nid);
+ if(act==='bug')return doBug(pi,m.nid);
+ if(act==='eject'){return}
+ if(act==='pick')return collect(pi,m.id);
+ if(act==='favor'){if(p.speedUntil>S.t||!needIntel(1))return;p.speedUntil=S.t+7;log('🤝 '+p.name+' cashes a favor — speed boost.');}
+ else if(act==='slip'){if(!own('f1')||p.slipUntil>S.t||!spend(2))return;p.slipUntil=S.t+14;p.slipSpent=false;p.speedUntil=Math.max(p.speedUntil,S.t+4);log('🏎️ '+p.name+' takes the slipstream.');}
+ else if(act==='fly'){
+  if(!own('qantas'))return;const n=NMAP[m.nid];if(!n)return;
+  if(n.id==='qantas'&&S.t<QANTAS_GROUND){toast(pi,'Qantas is grounded for now.');return}
+  if(!zoneLive(n)){toast(pi,'That exhibit is outside the dragnet.');return}
+  if(!ready(p,'fly',25)){toast(pi,'The jet is refuelling.');return}
+  if(!spend(3)){p.cd.fly=0;return}
+  const a=Math.random()*6.283;P[pi].x=n.wx+Math.cos(a)*3;P[pi].z=n.wz+Math.sin(a)*3;P[pi].y=World.groundAt(P[pi].x,P[pi].z,99);
+  emitTo(pi,{t:'tele',x:P[pi].x,y:P[pi].y,z:P[pi].z});log('✈️ '+p.name+' takes the Qantas jet straight to '+n.name.join(' ')+'.');
+ }
+ else if(act==='leak'){const t=tgt();if(t==null||!needIntel(2))return;log('🗣️ '+p.name+' leaks dirt on '+pname(t)+'.');addCortisol(t,2,'dirt in the morning paper')}
+ else if(act==='audit'){const t=tgt();if(t==null||!own('asic')||!ready(p,'audit',20)||!spend(4))return;log('⚖️ '+p.name+' sends the regulator after '+pname(t)+'.');addCortisol(t,1,'a very thorough audit')}
+ else if(act==='tweet'){const t=tgt();if(t==null||!own('trump')||!ready(p,'tweet',12)||!spend(2))return;log('🦅 '+p.name+' tweets. Devastating.');addCortisol(t,1,'a single tweet')}
+ else if(act==='spin'){
+  const kind=m.kind==='fox'?'fox':'press';if(!own(kind))return;const cost=kind==='fox'?2:3,cool=kind==='fox'?3:2;
+  if(!ready(p,'spin',15)){toast(pi,'The press room is between deadlines.');return}
+  if(m.mode==='roast'){const t=tgt();if(t==null||!spend(cost)){p.cd.spin=0;return}log('🗞️ '+p.name+' roasts '+pname(t)+' in the press.');addCortisol(t,1,'unflattering coverage')}
+  else{if(!spend(cost)){p.cd.spin=0;return}log('🗞️ '+p.name+' spins the story smooth.');addCortisol(pi,-cool,'friendly coverage')}
+ }
+ else if(act==='cook'){if(!own('rock')||!ready(p,'cook',20)||!spend(3))return;log('💪 '+p.name+' cooks the books. What numbers?');addCortisol(pi,-3,'a very warm kitchen')}
+ else if(act==='pressure'){if(!own('back')||!ready(p,'pressure',40))return;log('🤝 '+p.name+' leans on the table.');S.players.forEach((pl,j)=>{if(j!==pi)addCortisol(j,1,'a backroom deal gone loud')})}
+ else if(act==='budget'){if(!own('gov')||!ready(p,'budget',40)||!spend(3))return;log('🦘 BUDGET NIGHT! '+p.name+' reads the numbers.');S.players.forEach((pl,i)=>{if(i!==pi)payTo(i,1,pi,'the Treasurer collects')});giveIntel(pi,1,'you saw the budget first');banner('🦘 BUDGET NIGHT',p.name+' reads the numbers — everyone pays $1','#168388','🦘','event')}
+ else if(act==='push'){if(!own('sisy')||!atNode(pi,'sisy')||!ready(p,'push',8))return;gain(pi,3,'pushed the boulder uphill');addCortisol(pi,1,'it rolls back down by morning')}
+ else if(act==='jog'){if(!own('asics')||!atNode(pi,'asics')||!ready(p,'jog',6))return;log('👟 '+p.name+' jogs a lap in the circled shoe.');addCortisol(pi,-1,'a cooling lap')}
+ else if(act==='spy'){if(!needIntel(2))return;p.spyUntil=S.t+30;log('🛈 '+p.name+' buys a look at tomorrow.')}
+ else if(act==='bury'){if(!(p.spyUntil>S.t||own('jt')||own('iface')||(own('term')&&atNode(pi,'term'))))return;if(!ready(p,'bury',30))return;const c=S.deck.pop();S.deck.unshift(c);S.nextId=S.deck[S.deck.length-1];log('📈 '+p.name+' buries the story at the bottom of the deck.')}
+ else if(act==='dossier'){if(p.dossierUntil>S.t||!needIntel(3))return;p.dossierUntil=S.t+30;fxAt(pi,'📂 THE DOSSIER','#e19bff');log('📂 '+p.name+' opens THE DOSSIER — takeovers cost list price for 30s.')}
+ else if(act==='sweep'){if(!needIntel(2))return;const mine=Object.keys(S.bugs).filter(id=>S.owner[id]===pi);mine.forEach(id=>delete S.bugs[id]);log('🧹 '+p.name+' sweeps the office — '+(mine.length?mine.length+' bug(s) found.':'nothing found. Paranoia is free; the sweep cost 2 Intel.'))}
+ else if(act==='masspanic'){if(!needIntel(5))return;log('🔥 '+p.name+' unleashes MASS PANIC — everyone gains +2 Cortisol.');banner('🔥 MASS PANIC',p.name+' lit the fuse — everyone +2 Cortisol','#ff6b5e','🔥','event');S.players.forEach((pl,j)=>addCortisol(j,2,'mass panic'))}
+ else if(act==='sell'){const n=Math.min(Math.max(1,m.n|0),p.intel);if(n<=0){toast(pi,'No Intel to sell.');return}const rate=MOODS[S.mood].rate;p.intel-=n;fxAt(pi,'🛈−'+n,'#55c1ff');gain(pi,n*rate,'sold '+n+' Intel at the rumor exchange ($'+rate+'/🛈)')}
+ else if(act==='buy'){
+  const it=QUIK_PRICES[m.item];if(!it||!atNode(pi,'quik',4)){toast(pi,'Stand at the Quikstop.');return}
+  if(p.money<it[0]){toast(pi,'Costs $'+it[0]+'.');return}
+  if(m.item==='hp'&&p.hp>=100||m.item==='armor'&&p.armor>=100){toast(pi,'You are already topped up.');return}
+  p.money-=it[0];fxAt(pi,'−$'+it[0],'#ff6b5e');
+  if(m.item==='hp')p.hp=Math.min(100,p.hp+50);else if(m.item==='armor')p.armor=Math.min(100,p.armor+50);else emitTo(pi,{t:'grant',k:m.item,w:null,v:m.item==='gren'?1:2});
+  const q=S.owner.quik;if(q!=null&&q!==pi)gain(q,1,'a sale at your Quikstop');
+ }
+ else return;
+ sync();
 }
 
 /* ================= WIN ================= */
 function winCheck(){
- if(S.over)return;
- const alive=S.players.filter(p=>p.alive);
- if(alive.length<=1){S.over=true;S.winner=alive.length?alive[0].i:-1;log('🏆 '+(alive.length?alive[0].name+' is the last con standing.':'Everyone is busted.'));return}
- for(const p of S.players){if(!p.alive)continue;if(p.money>=S.goal&&missingTypes(p.i).length===0){S.over=true;S.winner=p.i;log('🏆 '+p.name+' completes THE BIG CON — $'+p.money+' and every node type.');return}}
+ if(!S||S.over)return true;
+ let win=-1;
+ S.players.forEach((pl,i)=>{if(pl.alive&&pl.money>=S.goal&&!missingTypes(i).length&&(win<0||pl.money>S.players[win].money))win=i});
+ if(win>=0){endGame(win,'con');return true}
+ const al=S.players.map((p,i)=>i).filter(i=>S.players[i].alive);
+ if(S.players.length>1&&al.length<=1){endGame(al.length?al[0]:-1,'last');return true}
+ if(S.humans>0&&!al.some(i=>!S.players[i].bot)){endGame(al.sort((a,b)=>S.players[b].money-S.players[a].money)[0],'bots');return true}
+ return false;
 }
-function gameStep(dt){
- if(!S||S.over||Net.role!=='host')return;
+function endGame(win,how){
+ if(S.over)return;S.over=true;S.winner=win;S.how=how;S.phase='over';
+ const board=S.players.map((p,i)=>({i,name:p.name,money:p.money,kills:p.kills,alive:p.alive,nodes:NODES.filter(n=>S.owner[n.id]===i).length,char:p.char,color:p.color})).sort((a,b)=>(b.alive-a.alive)||b.money-a.money);
+ log(win>=0?'🏆 '+pname(win)+' wins — '+(how==='con'?'the con is complete.':how==='last'?'last con standing.':'the field is picked clean.'):'🏆 Nobody walks away.');
+ sync(true);emit({t:'over',win,how,board,goal:S.goal});
+}
+
+/* ================= HOST FRAME ================= */
+function hostStep(dt){
+ if(!S||S.over)return;
  S.t+=dt;
- if(S.phase==='jet'){
-  const jp=jetPos(S.t);
-  S.players.forEach((p,i)=>{if(!p.alive||p.landed)return;const q=P[i];q.x=jp.x;q.y=jp.y;q.z=jp.z});
-  if(S.t>S.jet.dur){S.phase='play';S.nextTick=S.t+TICK_SEC;S.nextEvent=S.t+EVENT_SEC;initZone();log('🛫 The jet has landed — seize exhibits, bust cons, complete the Big Con.');}
+ if(S.phase==='jet'&&S.t>=S.jet.dur){
+  S.phase='play';S.tPlay=S.t;S.nextTick=S.t+TICK_SEC;S.nextEvent=S.t+EVENT_SEC;initZone();
+  banner('THE JET HAS LEFT','Seize exhibits, collect loot, stay inside the dragnet. Last con standing — or complete the Big Con.','#168388','🪂','info');sync(true);
  }
- tickStep();
- eventStep();
- zoneStep(dt);
- // grenades
- for(let i=GR.length-1;i>=0;i--){
-  const g=GR[i];g.t+=dt;g.x+=g.vx*dt;g.z+=g.vz*dt;g.y+=g.vy*dt;g.vy-=18*dt;
-  const gy=World.groundAt(g.x,g.z,g.y);
-  if(g.y<=gy){g.y=gy;g.vy*=-.35;g.vx*=.6;g.vz*=.6}
-  if(g.t>GREN.fuse){GR.splice(i,1);emit({t:'boom',x:g.x,y:g.y,z:g.z});S.players.forEach((p,j)=>{if(!p.alive)return;const q=P[j];if(!q)return;const d=Math.hypot(q.x-g.x,q.z-g.z);if(d<GREN.rad)applyDamage(j,GREN.dmg*(1-d/GREN.rad),g.by,'nade',false)})}
- }
- netStep(dt);
+ if(typeof botsStep==='function')botsStep(dt);
+ if(S.phase==='play'){zoneStep(dt);tickStep();eventStep()}
+ grenadesStep(dt);
+ if(S.phase==='play'&&!S.over)winCheck();
 }
-function throwGrenade(by,o,v){
- GR.push({x:o[0],y:o[1],z:o[2],vx:v[0],vy:v[1],vz:v[2],t:0,by});
-}
-function handleShot(pi,d){
- const p=S.players[pi];if(!p||!p.alive||S.over)return;
- const w=WEAPONS[d.w];if(!w)return;
- const q=P[pi];if(!q)return;
- // simple host-side validation
- const dx=d.dx,dy=d.dy,dz=d.dz;
- const hit=World.ray(q.x,q.y+1.6,q.z,dx,dy,dz,w.range);
- let best=null,bestT=hit;
- S.players.forEach((v,j)=>{if(j===pi||!v.alive)return;const tq=P[j];if(!tq)return;const r=rayPlayer(q.x,q.y+1.6,q.z,dx,dy,dz,tq.x,tq.y,tq.z,!!(v.fl&1),w.range);if(r&&r.t<bestT){bestT=r.t;best={j,head:r.head}}});
- if(best)applyDamage(best.j,w.dmg*(best.head?1.8:1),pi,d.w,best.head);
- emit({t:'shotfx',pi,w:d.w,x:q.x,y:q.y+1.6,z:q.z,dx,dy,dz,t:bestT});
-}
-function doAction(pi,act,d){
- const p=S.players[pi];if(!p||!p.alive||S.over)return;
- if(act==='seize'){
-  const n=NMAP[d.id];if(!n)return;
-  const q=P[pi];if(!q||Math.hypot(q.x-n.wx,q.z-n.wz)>NODE_R+3)return;
-  if(S.owner[n.id]===pi)return;
-  const cost=n.cost+(S.owner[n.id]!=null?4:0);
-  if(p.money<cost)return;
-  payVoid(pi,cost,'seizing '+n.name.join(' '));
-  const prev=S.owner[n.id];if(prev!=null)addCortisol(prev,1,'your exhibit was taken');
-  S.owner[n.id]=pi;S.seizeCount[n.id]=(S.seizeCount[n.id]||0)+1;
-  addCortisol(pi,1,'you seized an exhibit');
-  log('🏛️ '+p.name+' seizes '+n.name.join(' ')+'.');
-  fx(n.x,n.y-40,'SEIZED','#7fe08d');
-  sync(true);
- }
- else if(act==='buy'){
-  const item=d.item,price={hp:3,armor:5,ammo:2,gren:4}[item];
-  if(!price||p.money<price)return;
-  payVoid(pi,price,'Quikstop');
-  if(item==='hp')p.hp=Math.min(100,p.hp+50);
-  else if(item==='armor')p.armor=Math.min(100,p.armor+50);
-  else if(item==='ammo')emitTo(pi,{t:'grant',k:'ammo',v:1});
-  else if(item==='gren')emitTo(pi,{t:'grant',k:'gren',v:1});
-  fxAt(pi,'BOUGHT','#7fe08d');
-  sync();
- }
- else if(act==='push'&&S.owner.sisy===pi){
-  gain(pi,3,'pushing the boulder');
-  addCortisol(pi,1,'the boulder rolls back');
- }
- else if(act==='jog'&&S.owner.asics===pi&&p.cortisol>0){
-  p.cortisol--;
-  fxAt(pi,'🔥−1','#8fbf7f');
- }
-}
+function addChat(pi,text){if(!S)return;S.chat.push({n:pi,t:text});S.chatN=(S.chatN|0)+1;if(S.chat.length>40)S.chat.shift();sync()}

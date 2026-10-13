@@ -18,7 +18,7 @@ function codeLabel(slug){const hit=BUZZWORDS.find(b=>codeSlug(b)===slug);return 
 function matchBuzzword(input){const s=codeSlug(input);if(!s)return '';if(BUZZWORDS.some(b=>codeSlug(b)===s))return s;const hits=BUZZWORDS.filter(b=>codeSlug(b).startsWith(s));return hits.length===1?codeSlug(hits[0]):s}
 function genCode(){return codeSlug(BUZZWORDS[Math.floor(Math.random()*BUZZWORDS.length)])}
 function setNetStatus(msg,err){const el=$('netStatus');el.textContent=msg||'';el.className=err?'err':''}
-function cleanName(s){return String(s||'').replace(/[<>&\"'`]/g,'').trim().slice(0,16)}
+function cleanName(s){return String(s||'').replace(/[<>&"'`]/g,'').trim().slice(0,16)}
 function getPlayerId(){const key='bigcon3d-player-id';let id=null;try{id=sessionStorage.getItem(key)}catch(e){}if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));try{sessionStorage.setItem(key,id)}catch(e){}}return id}
 function curT(){if(!S)return 0;return Net.role==='host'?S.t:(Net.gt||S.t)+(performance.now()-(Net.gtAt||performance.now()))/1000}
 
@@ -173,7 +173,7 @@ function sendLobbyChat(){
 function renderCharGrid(){
  const g=$('charGrid');if(!g)return;const list=lobbyPlayers(),me=list[Net.myIdx]||{};
  g.innerHTML=CHARS.map(c=>{const takenBy=list.findIndex(p=>p.char===c.id);const taken=takenBy>=0&&takenBy!==Net.myIdx;
-  return '<div class=\"charpick'+(me.char===c.id?' on':'')+(taken?' taken':'')+'\" data-c=\"'+c.id+'\"><img src=\"'+charSrc(c.id)+'\" alt=\"\"><div class=\"cn\">'+esc(c.name)+'</div></div>'}).join('');
+  return '<div class="charpick'+(me.char===c.id?' on':'')+(taken?' taken':'')+'" data-c="'+c.id+'"><img src="'+charSrc(c.id)+'" alt=""><div class="cn">'+esc(c.name)+'</div></div>'}).join('');
  g.querySelectorAll('.charpick').forEach(el=>el.onclick=()=>{
   if(el.classList.contains('taken'))return;const id=el.dataset.c;const cur=lobbyPlayers()[Net.myIdx];const want=cur&&cur.char===id?null:id;
   if(Net.role==='host')applyChar(Net.myIdx,want);else sendConn(Net.conn,{t:'pick',char:want});
@@ -181,8 +181,8 @@ function renderCharGrid(){
 }
 function renderLobbyList(){
  const el=$('lobbyList');if(!el)return;const list=lobbyPlayers();
- el.innerHTML=list.map((p,i)=>{const col=playerColor(i);return '<div class=\"lrow\"><span class=\"ld\" style=\"background:'+col+'\"></span><span class=\"ln\">'+esc(p.name)+(i===Net.myIdx?' (you)':'')+'</span>'+(p.char?'<span class=\"gn\">'+esc(charMeta(p.char)?charMeta(p.char).name:'')+'</span>':'')+(i===0?'<span class=\"lh\">HOST</span>':'')+'</div>'}).join('')
-  +(Net.bots>0?'<div class=\"lrow\"><span class=\"ld\" style=\"background:#555\"></span><span class=\"ln\">+ '+Net.bots+' CON BOTS</span><span class=\"lh\">FILLER</span></div>':'');
+ el.innerHTML=list.map((p,i)=>{const col=playerColor(i);return '<div class="lrow"><span class="ld" style="background:'+col+'"></span><span class="ln">'+esc(p.name)+(i===Net.myIdx?' (you)':'')+'</span>'+(p.char?'<span class="gn">'+esc(charMeta(p.char)?charMeta(p.char).name:'')+'</span>':'')+(i===0?'<span class="lh">HOST</span>':'')+'</div>'}).join('')
+  +(Net.bots>0?'<div class="lrow"><span class="ld" style="background:#555"></span><span class="ln">+ '+Net.bots+' CON BOTS</span><span class="lh">FILLER</span></div>':'');
 }
 function updateStartBtn(){
  const b=$('btnStart');if(!b)return;const n=lobbyPlayers().length;
@@ -221,13 +221,7 @@ function hostOpenPeer(){
   if(ty==='peer-unavailable')return;
   setNetStatus('Network error: '+(ty||'unknown')+' — check your connection, or play SOLO.',true);
  });
- p.on('connection',c=>{
-  c.__lastSeen=Date.now();
-  c.on('data',d=>{try{onHostData(c,d)}catch(err){console.error(err)}});
-  c.on('open',()=>{c.__lastSeen=Date.now()});
-  c.on('close',()=>onHostClose(c));
-  c.on('error',()=>onHostClose(c));
- });
+ p.on('connection',c=>{c.on('open',()=>{c.__lastSeen=Date.now();c.on('data',d=>{try{onHostData(c,d)}catch(err){console.error(err)}})});c.on('close',()=>onHostClose(c));c.on('error',()=>onHostClose(c))});
 }
 let guestRetry=0,guestHb=null;
 function guestJoin(name,code){
@@ -242,14 +236,7 @@ function connectGuest(){
  p.on('open',()=>{
   const c=p.connect(PFX+Net.roomCode,{reliable:true});Net.conn=c;
   const to=setTimeout(()=>{if(!c.open){setNetStatus('Could not reach room “'+Net.roomLabel+'”. Check the code, or ask the host to recreate it.',true);try{p.destroy()}catch(e){}}},15000);
-  c.on('open',()=>{
-   clearTimeout(to);guestRetry=0;c.__lastSeen=Date.now();
-   const sendHello=()=>sendConn(c,{t:'hello',name:Net.myName,playerId:Net.playerId});
-   sendHello();
-   let tries=0;const hi=setInterval(()=>{if(Net.started||tries++>4){clearInterval(hi);return}sendHello()},800);
-   setNetStatus('Connected — waiting for the lobby…');
-   startGuestHeartbeat(c);
-  });
+  c.on('open',()=>{clearTimeout(to);guestRetry=0;c.__lastSeen=Date.now();sendConn(c,{t:'hello',name:Net.myName,playerId:Net.playerId});setNetStatus('Connected — waiting for the lobby…');startGuestHeartbeat(c)});
   c.on('data',d=>{c.__lastSeen=Date.now();try{onGuestData(d)}catch(e){console.error(e)}});
   c.on('close',()=>guestLost());c.on('error',()=>guestLost());
  });
@@ -291,12 +278,10 @@ function onMsg(m){
 }
 function startMatch(){
  if(Net.role!=='host'||Net.started)return;
- Net.goal=clampGoal($('goalInput').value);Net.bots=Math.max(0,Math.min(MAXENT-Net.roster.length,parseInt($('botsInput').value)||0));
+ Net.goal=clampGoal($('goalInput').value);Net.bots=Math.max(0,Math.min(MAXENT-Net.roster.length,parseInt($('botsInput').value||'0',10)||0));
  const used=new Set(Net.roster.map(e=>e.char).filter(Boolean));
- Net.roster.forEach(e=>{if(!e.char)e.char=pickFreeChar(used);used.add(e.char)});
- const humans=Net.roster.length,bots=Net.bots;
- const defs=Net.roster.map(e=>({name:e.name,char:e.char}));
- Net.myIdx=0;
+ const defs=Net.roster.map(e=>{let ch=e.char;if(!ch){ch=pickFreeChar(used);used.add(ch)}return{name:e.name,char:ch}});
+ Net.started=true;Net.myIdx=0;
  initGame(defs,{goal:Net.goal,bots:Net.bots});
  for(let i=1;i<Net.conns.length;i++)sendConn(Net.conns[i],{t:'begin',idx:i,s:pubState(true),pk:Array.from(PK.values())});
  enterGame(false);
