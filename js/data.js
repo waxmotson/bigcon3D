@@ -200,8 +200,12 @@ function refreshCharacters(){
     const file=x.name,id=file.replace(/\.[^.]+$/,'').toLowerCase(),known=existing.get(file.toLowerCase());
     return known||{id,name:id.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),file};
    });
+   // Keep the hand-curated entries first and intact, even if the directory listing
+   // is incomplete or a future upload has a different filename. Append only new files.
+   const knownFiles=new Set(CHARS.map(c=>c.file.toLowerCase()));
+   const additions=discovered.filter(c=>!knownFiles.has(c.file.toLowerCase()));
+   if(additions.length)CHARS.push(...additions);
    if(discovered.length){
-    CHARS.splice(0,CHARS.length,...discovered);
     if(typeof renderCharGrid==='function')renderCharGrid();
     if(typeof renderLobbyList==='function')renderLobbyList();
    }
