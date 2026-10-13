@@ -67,7 +67,7 @@ const NODES=[
 {id:'group',image:'./static/the outdoors.png',name:['THE OUTDOOR','GROUP PHOTOGRAPH'],icon:'👥',type:'WILD',shape:'wide',income:1,cost:4,x:820,y:1120,rot:-1,sub:'everyone smiled',sp:'Whenever ANY player is raided, gain +1 Intel (you have photos of everyone).'},
 {id:'sat',image:'./static/the outback.jpg',name:['SATELLITE IMAGE','THE OUTBACK'],icon:'🛰️',type:'WILD',shape:'sat',income:1,cost:4,x:610,y:1300,rot:1,sub:'landscape · the dry country',sp:'−1 Cortisol at the start of each of your turns (hiding out bush).'},
 /* — the people (polaroids) — */
-{id:'watson',image:'./static/ceo of coal.png',name:['MARK WATSON','CEO OF COAL'],icon:'🕴️',type:'WILD',shape:'photo',income:0,cost:6,x:330,y:590,rot:3,sub:'the face of the company',sp:'+$2/turn while you also own COAL CORP HQ. Personally deflects the CEO PHOTO LEAK.'},
+{id:'watson',image:'./static/ceo of coal.png',name:['MARK WATSON','CEO OF COAL'],icon:'🤵🏻',type:'WILD',shape:'photo',income:0,cost:6,x:330,y:590,rot:3,sub:'the face of the company',sp:'+$2/turn while you also own COAL CORP HQ. Personally deflects the CEO PHOTO LEAK.'},
 {id:'bessent',image:'./static/scott bessent.png',name:['SCOTT BESSENT','“BIG BESSENT”'],icon:'👔',type:'WILD',shape:'photo',income:1,cost:7,x:1600,y:310,rot:-2,sub:'US Treasury · moves markets',sp:'+$1 income per BANK node you own.'},
 {id:'chalmers',image:'./static/jim chalmers.png',name:['JIM CHALMERS','“THE JIM”'],icon:'👨‍💼',type:'WILD',shape:'photo',income:1,cost:8,x:1720,y:180,rot:2,sub:'the Treasurer',sp:'+$1 income per REGULATOR node you own (the Treasurer’s friends).'},
 {id:'albo',image:'./static/albo.png',name:['ANTHONY ALBANESE','THE PM'],icon:'🫡',type:'WILD',shape:'photo',income:1,cost:8,x:1875,y:105,rot:-2,sub:'the motorcade',sp:'Tolls rivals pay to enter YOUR nodes are $2 (the PM closes the road).'},
@@ -88,92 +88,19 @@ const BASE_EDGES=[
  ['citi','commbank'],['commbank','nab'],['nab','anz'],['nab','westpac'],['westpac','commbank'],['westpac','citi'],['anz','rba'],['citi','bond007'],['citi','coal'],
  /* regulators row */
  ['rba','bullock'],['rba','asic'],['asic','accc'],['accc','gov'],['gov','chalmers'],['chalmers','albo'],['albo','trump'],['rba','bond'],['gov','herald'],
- /* desks & screens */
- ['bond','hedge'],['bond','bessent'],['bond','back'],['hedge','term'],['hedge','stock'],['term','bessent'],['term','stock'],
- /* charts — each lives in a different neighbourhood, linked to neighbours AND the master */
- ['rba','cash'],['cash','bullock'],['cash','tenyear'],['aus','gov'],['aus','accc'],['aus','tenyear'],['gov','chalmers'],['chalmers','tenyear'],
- ['us','trump'],['us','albo'],['us','tenyear'],['japan','petronas'],['japan','tanker'],['japan','tenyear'],
- ['uk','press'],['uk','news'],['uk','tenyear'],['tenyear','bessent'],['tenyear','bond'],
- ['infl','jt'],['infl','back'],
- ['stock','oilgraph'],
- 
- /* commodities */
- ['oil','oilgraph'],['oil','tanker'],['oil','petronas'],['oil','barrels'],['oil','jt'],['barrels','forklift'],['forklift','port'],['forklift','gold'],
- ['tanker','port'],['tanker','petronas'],['petronas','trump'],
- ['train','coal'],['train','watson'],['train','port'],['train','rock'],['train','bhp'],['bhp','coal'],['bhp','watson'],['bhp','market'],
- /* corporates & the wandering servo */
- ['coal','watson'],['coal','quik'],['quik','market'],['quik','bond007'],['quik','watson'],['market','f1'],
- ['f1','qantas'],['qantas','press'],['qantas','golf'],['bullet','school'],['bullet','albo'],['bullet','golf'],['bullet','asics'],
- /* media ring */
- ['back','press'],['back','leak'],['back','jt'],['iface','toktimer'],
- ['press','leak'],['press','fox'],['press','golf'],['press','news'],['leak','photo'],['photo','news'],['photo','bigshort'],['photo','made'],
- ['news','fox'],['news','made'],['fox','jim'],['jim','bess'],['jim','herald'],['bess','insider'],['bess','wef'],['bess','herald'],
- ['insider','whistle'],['wef','brad'],['wef','iface'],['bigshort','brad'],['hedge','bigshort'],
- /* school, fate, shoes, the clock */
- ['school','ib'],['school','mpc'],['school','golf'],['ib','mpc'],['mpc','sisy'],['sisy','group'],['sisy','sat'],
- ['group','sat'],['group','press'],['group','news'],['sat','made'],['sat','asics'],['asics','mpc'],['asics','sisy'],
- ['toktimer','whistle'],['toktimer','brad'],
- /* people bridges */
- ['bullock','rock'],['rock','jt'],['jt','press'],['watson','golf'],['chalmers','herald']
+ /* the charts, now threaded through the middle of the board */
+ ['tenyear','us'],['tenyear','aus'],['tenyear','stock'],['tenyear','cash'],['cash','rba'],['cash','infl'],['infl','japan'],['uk','aus'],['stock','fox'],['stock','term'],
+ /* commodities & the oil corridor */
+ ['oil','oilgraph'],['oil','tanker'],['oil','petronas'],['oil','barrels'],['barrels','forklift'],['oil','gold'],['gold','bhp'],['bhp','train'],['train','port'],['port','coal'],['coal','forklift'],['oil','quik'],['quik','market'],['market','coal'],['f1','market'],
+ /* media & the leak */
+ ['press','fox'],['press','leak'],['leak','jim'],['jim','herald'],['herald','bess'],['bess','insider'],['insider','photo'],['photo','bigshort'],['bigshort','news'],['news','wef'],['wef','term'],
+ /* the people, pinned near their institutions */
+ ['watson','coal'],['bessent','bess'],['chalmers','gov'],['albo','gov'],['trump','herald'],['bullock','rba'],['bond007','citi'],['rock','coal'],['brad','bigshort'],['jt','press'],
+ /* school, fate, the backrooms */
+ ['school','ib'],['ib','mpc'],['mpc','sisy'],['sisy','group'],['group','sat'],['sat','asics'],['asics','toktimer'],['toktimer','wef'],['back','term'],['back','golf'],['golf','whistle'],['whistle','iface'],['iface','term'],['made','group'],['made','sat']
 ];
-const REMOVED_NODE_IDS=new Set(['notes','vault','unid1','unid2','real','spend','can','tv','ger','timeline','econ','debt']);
-const CLEAN_EDGES=BASE_EDGES.filter(e=>!REMOVED_NODE_IDS.has(e[0])&&!REMOVED_NODE_IDS.has(e[1]));
-let EDGES=CLEAN_EDGES.map(e=>e.slice());
-const ADJ={};
-function rebuildAdj(){
- Object.keys(ADJ).forEach(k=>delete ADJ[k]);
- EDGES.forEach(e=>{
-  if(!NMAP[e[0]]||!NMAP[e[1]])return;
-  (ADJ[e[0]]=ADJ[e[0]]||[]).push(e[1]);
-  (ADJ[e[1]]=ADJ[e[1]]||[]).push(e[0]);
- });
-}
-rebuildAdj();
-/* Quikstop is the only exhibit that physically moves each game — five neighbourhoods, same servo */
-const QUIK_HOME={x:350,y:430,rot:2};
-const QUIK_SLOTS=[
- {x:350,y:430,rot:2,links:['coal','watson','bond007','market','train'],label:'the original servo · inner west'},
- {x:1540,y:1210,rot:-2,links:['photo','bigshort','market','news'],label:'down by MarketPlace · the late shift'},
- {x:2060,y:680,rot:1,links:['forklift','petronas','whistle'],label:'the docks servo · petrol & crude'},
- {x:700,y:280,rot:-1,links:['rba','bullock','rock','westpac','cash'],label:'across from the Reserve Bank'},
- {x:1120,y:1410,rot:2,links:['made','sat','news','photo'],label:'the unexplained servo · next to MADE'}
-];
-function nodeBox(n){
- const sizes={photo:[140,92],wide:[170,100],bubble:[150,80],logo:[150,80],chart:[130,64],news:[150,84],made:[140,74],mpc:[164,96],sat:[170,90]};
- return sizes[n.shape]||[150,80];
-}
-function separateNodes(){
- const pad=16,minX=95,maxX=2305,minY=95,maxY=1455;
- for(let iter=0;iter<90;iter++){
-  let moved=false;
-  for(let i=0;i<NODES.length;i++){
-   for(let j=i+1;j<NODES.length;j++){
-    const A=NODES[i],B=NODES[j];
-    const [aw,ah]=nodeBox(A),[bw,bh]=nodeBox(B);
-    const dx=B.x-A.x,dy=B.y-A.y;
-    const ox=(aw+bw)/2+pad-Math.abs(dx);
-    const oy=(ah+bh)/2+pad-Math.abs(dy);
-    if(ox>0&&oy>0){
-     if(ox<oy){const s=dx===0?(i%2?1:-1):Math.sign(dx);const p=ox/2+.6;A.x-=s*p;B.x+=s*p}
-     else{const s=dy===0?(i%2?1:-1):Math.sign(dy);const p=oy/2+.6;A.y-=s*p;B.y+=s*p}
-     moved=true;
-    }
-   }
-  }
-  NODES.forEach(n=>{n.x=Math.max(minX,Math.min(maxX,n.x));n.y=Math.max(minY,Math.min(maxY,n.y))});
-  if(!moved)break;
- }
-}
-function applyQuikSlot(slot){
- const q=NMAP.quik;if(!q||!slot)return;
- q.x=slot.x;q.y=slot.y;q.rot=slot.rot;
- EDGES=BASE_EDGES.filter(e=>e[0]!=='quik'&&e[1]!=='quik').concat((slot.links||[]).map(id=>['quik',id]));
- rebuildAdj();
- separateNodes();
-}
-const TYPE_COLORS={BANK:'#a87511',COMMODITY:'#c05621',MEDIA:'#b5308c',CORPORATE:'#1f6f8b',REGULATOR:'#5c6b73',CHART:'#2e8b57',WILD:'#6b4fa0'};
-const PCOLORS=['#f5c542','#55c1ff','#e19bff','#7fe08d','#ff5e9c','#ffffff','#00e5c0','#ffa94d'];
-const MAXHUMANS=8,MAXENT=24;
+const EDGES=BASE_EDGES;
+const TYPE_COLORS={BANK:'#3d8fd1',REGULATOR:'#c0392b',CHART:'#e8a020',COMMODITY:'#d35400',CORPORATE:'#2e7d64',MEDIA:'#8e44ad',WILD:'#7f8c8d'};
 const CHARURL='./characters/';
 const CHARS=[
  {id:'markwatson',name:'Mark Watson',file:'markwatson.png'},
@@ -187,6 +114,27 @@ const CHARS=[
 ];
 function charMeta(id){return CHARS.find(c=>c.id===id)||null}
 function charSrc(id){const c=charMeta(id);return c?CHARURL+c.file:''}
+// Automatically load any new PNGs from the characters/ folder via the public GitHub API.
+// Falls back to the bundled list if the API is unreachable (e.g. offline or rate-limited).
+(function loadCharacters(){
+ const fallback = CHARS.slice();
+ fetch('https://api.github.com/repos/waxmotson/bigcon3D/contents/characters')
+  .then(r=>r.ok?r.json():Promise.reject(r.status))
+  .then(files=>{
+   const pngs = files.filter(f=>f.name.toLowerCase().endsWith('.png'));
+   if(!pngs.length)return;
+   CHARS.length = 0;
+   pngs.forEach(f=>{
+    const base = f.name.replace(/\.png$/i,'');
+    const id = base.toLowerCase().replace(/[^a-z0-9]/g,'');
+    const name = base.replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    CHARS.push({id, name, file:f.name});
+   });
+   // Re-render character grid if the lobby is already showing
+   if(typeof renderCharGrid==='function')renderCharGrid();
+  })
+  .catch(()=>{/* keep fallback */});
+})();
 const MOODS={
  CALM:{label:'MARKET: CALM',color:'#8fbf7f',tint:'rgba(70,130,70,0.045)',rate:2,desc:'no modifiers · 1 🛈 = $2'},
  BOOM:{label:'MARKET: BOOM',color:'#f5c542',tint:'rgba(200,160,40,0.075)',rate:2,desc:'COMMODITIES +$1/turn · 1 🛈 = $2'},
@@ -195,60 +143,55 @@ const MOODS={
 };
 const CARDS=[
 {id:'oilspike',icon:'🛢️',title:'OIL SPIKES — WTI +12%',text:'Crude goes vertical. The pit pays out, the tankers get rich, and everyone pays at the pump.',
- run(){setMood('BOOM','WTI +12% — crude goes vertical');[['oil',6,'crude windfall'],['oilgraph',2,'the graph called it'],['tanker',3,'tankers rechartered at panic rates'],['petronas',3,'the national oil company'],['barrels',2,'the barrel yard']].forEach(a=>{const o=S.owner[a[0]];if(o!=null)gain(o,a[1],a[2])});const q=S.owner.quik;S.players.forEach((pl,i)=>{if(i===q)return;if(q==null)payVoid(i,1,'fuel costs — nobody minds the till');else payTo(i,1,q,'fuel costs → QuikStop')});}},
-{id:'coalrush',icon:'🚃',title:'COAL RUSH',text:'Demand for black rock goes nuclear. Everything on rails and water makes money.',
- run(){setMood('BOOM','coal rush — everything on rails makes money');[['port',4,'the docks work overtime'],['train',2,'the train runs all night'],['tanker',3,'freight rates through the roof'],['coal',2,'COAL Corp books all of it'],['forklift',1,'pallets upon pallets'],['bhp',3,'the Big Australian books the tonnes']].forEach(a=>{const o=S.owner[a[0]];if(o!=null)gain(o,a[1],a[2])});}},
-{id:'rates',icon:'🏛️',title:'RBA CASH-RATE DECISION',text:'Governor Bullock leans into the microphone. Money gets expensive — for everyone but the insiders.',
- run(){setMood('CALM','the RBA decides — the market holds its breath, then exhales');const r=S.owner.rba,b=S.owner.bullock;S.players.forEach((pl,i)=>{if(i===r||i===b)return;payFee(i,2,'the cost of money')});if(r!=null)log('🏛️ '+pname(r)+' set the rate — pays nothing.');if(b!=null)log('👩‍💼 The Governor takes '+pname(b)+'’s calls — pays nothing.');const c=S.owner.cash;if(c!=null)gain(c,2,'you literally set it');const j=S.owner.jim;if(j!=null)gain(j,2,'the headline sells papers');const be=S.owner.bess;if(be!=null)gain(be,2,'“BIG BESSENT” reacts live');const hs=S.owner.herald;if(hs!=null)gain(hs,2,'THE JIM REAPER reprints the decision');}},
-{id:'bondrevolt',icon:'💥',title:'BONDMAGEDDON',text:'“Government Bond: the collapse of the world’s safest investment.” Yields go vertical from Tokyo to Toronto.',
- run(){setMood('PANIC','“the collapse of the world’s safest investment”');const bd=S.owner.bond;S.players.forEach((pl,i)=>{const banks=NODES.filter(n=>n.type==='BANK'&&S.owner[n.id]===i).length;if(!banks)return;const amt=banks*2;if(bd!=null)payTo(i,amt,bd,'the revolt eats '+banks+' bank position'+(banks>1?'s':'')+' → The Bond Desk');else payVoid(i,amt,'the revolt eats the banking book')});COUNTRY.forEach(c=>{const o=S.owner[c];if(o!=null)gain(o,c==='japan'?3:1,NMAP[c].name.join(' ')+' pays its reader')});const t=S.owner.tenyear;if(t!=null)gain(t,2,'the master chart was right');const be=S.owner.bess;if(be!=null)gain(be,2,'Big Bessent called it on air');const br=S.owner.brad;if(br!=null)gain(br,2,'he had it explained in the movie');const bs=S.owner.bigshort;if(bs!=null)gain(bs,3,'the cinema saw it coming');const lk=S.owner.leak;if(lk!=null)gain(lk,2,'the leak was first with it');}},
-{id:'ceophoto',icon:'📸',title:'CEO PHOTO LEAKS — COAL CORP',text:'Mark Watson, photographed exactly where he should not have been. Someone is holding matches.',
- run(){setMood('FRENZY','CEO photo leaks — the front pages feed');const c=S.owner.coal;if(c==null){log('🚂 COAL CORP HQ is unowned — Watson denies everything to an empty room.');return}if(S.owner.watson===c){log('🕴️ Watson fronts the cameras himself — the photos are dismissed as “old”. No Cortisol.');return}if(S.owner.port===c)gain(c,5,'shipped the coal before the news broke');if(S.owner.press===c||S.owner.fox===c){gain(c,3,'the press room spins it beautifully');return}addCortisol(c,3,'the photos run on every front page','event');}},
-{id:'tariffs',icon:'🦅',title:'TRUMP TWEETS TARIFFS',text:'ALL CAPS. Exclamation points. Global markets do a synchronized swan dive.',
- async run(){setMood('PANIC','TARIFFS! ALL CAPS! markets swan-dive');const t=S.owner.trump;let chain;const opts=[{label:'🛢️ OIL chain +$3 each',v:'oil'},{label:'🚂 COAL chain +$3 each',v:'coal'}];
- if(t!=null)chain=await askPlayer(t,{title:'TRUMP TWEETS TARIFFS',body:'You own THE DONALD — which chain gets the windfall?',options:opts,def:Math.random()<.5?'oil':'coal'});
- else chain=Math.random()<.5?'oil':'coal';
- const list=chain==='oil'?['oil','oilgraph','barrels','tanker','petronas']:['coal','train','port','watson','forklift','bhp'];
- const winners=new Set();list.forEach(id=>{const o=S.owner[id];if(o!=null){gain(o,3,chain+' windfall via '+NMAP[id].name[0]);winners.add(o)}});
- const u=S.owner.us;if(u!=null){gain(u,2,'the safe-haven bid');winners.add(u)}
- S.players.forEach((pl,i)=>{if(!winners.has(i))payVoid(i,1,'the tariff bill')});
- if(t!=null)log('🦅 The tweet did numbers.');}},
-{id:'besspeak',icon:'🎤',title:'BIG BESSENT SPEAKS',text:'The Treasury clears its throat. Bond desks straighten their ties. Markets listen.',
- run(){setMood('CALM','Big Bessent soothes the desk');const b=S.owner.bessent;if(b!=null)gain(b,3,'the big man speaks');const d=S.owner.bond;if(d!=null)gain(d,2,'the desk frontran the speech');const t=S.owner.tenyear;if(t!=null)gain(t,2,'yields obey');const br=S.owner.brad;if(br!=null)gain(br,2,'he had it explained to him');}},
-{id:'budget',icon:'📰',title:'THE JIM DELIVERS THE BUDGET',text:'“The Jim…” reads numbers to a sleepy chamber. Somebody, somewhere, is counting.',
- run(){setMood('CALM','the budget is delivered — mostly numbers');const s=S.owner.spend;if(s!=null)gain(s,3,'the spending graphic glows');const ch=S.owner.chalmers;if(ch!=null)gain(ch,2,'the Treasurer delivers');const j=S.owner.jim;if(j!=null)gain(j,2,'the exclusive pays');const hs=S.owner.herald;if(hs!=null)gain(hs,2,'THE JIM REAPER special edition');const a=S.owner.albo;if(a!=null)gain(a,1,'the PM signs it');S.players.forEach((pl,i)=>{if(i!==s&&i!==ch&&i!==j&&i!==a&&i!==hs)payVoid(i,1,'return to sender (taxes)')});}},
-{id:'mpcfinals',icon:'🏆',title:'MONETARY POLICY COMPETITION FINALS',text:'The RBA’s big night. Schools. Charts. Trophies. JTPortal is rumoured to be judging.',
- run(){setMood('BOOM','monetary policy finals — the schools deliver');const m=S.owner.mpc;if(m!=null){gain(m,4,'the champions’ purse');giveIntel(m,1,'the finalists’ data')}const sc=S.owner.school;if(sc!=null)gain(sc,2,'the school places');const ib=S.owner.ib;if(ib!=null)gain(ib,2,'the IB cohort delivers');const jt=S.owner.jt;if(jt!=null)giveIntel(jt,1,'JTPortal judged the submissions');}},
-{id:'sisyroll',icon:'🪨',title:'THE BOULDER ROLLS BACK DOWN',text:'Empires, portfolios, homework — everything heavy slides. The biggest players feel it most.',
- run(){setMood('CALM','the boulder rolls back down, as ever');const counts=S.players.map((pl,i)=>NODES.filter(n=>S.owner[n.id]===i).length);const mx=Math.max(...counts);S.players.forEach((pl,i)=>{if(counts[i]===mx&&S.owner.sisy!==i)payVoid(i,2,'the boulder finds the biggest stack')});const s=S.owner.sisy;if(s!=null)log('🪨 '+pname(s)+' is used to this — immune.');}},
-{id:'goldrush',icon:'🪙',title:'GOLD RUSH',text:'The gold-coloured coins gleam. Paper money suddenly looks like a rumor.',
- run(){setMood('BOOM','gold gleams — paper looks like a rumor');const g=S.owner.gold;if(g!=null)gain(g,5,'everything gleams');const n=S.owner.notes;if(n!=null)gain(n,2,'collectors pay up');const bh=S.owner.bhp;if(bh!=null)gain(bh,3,'ore prices sneak up with the gold');S.players.forEach((pl,i)=>{if(i!==g&&i!==n&&i!==bh)payVoid(i,1,'inflation bites')});}},
-{id:'rockcooks',icon:'💪',title:'THE ROCK COOKS',text:'A gym, a blender, a set of books that needed cooking. The smell is unmistakable.',
- run(){setMood('CALM','the books are cooked; the gym is calm');const r=S.owner.rock;if(r!=null){gain(r,3,'ladder of opportunity');addCortisol(r,-1,'the calm after the cook')}else log('💪 Nobody owns The Rock. The books stay raw.');}},
-{id:'davos',icon:'🏔️',title:'DAVOS — THE CONFERENCE STAGE',text:'Lanyards, panels, fondue. Global networks tighten over canapés.',
- run(){setMood('FRENZY','Davos — lanyards, panels, fondue');const w=S.owner.wef;if(w!=null)gain(w,3,'the big table pays out');const b=S.owner.bessent;if(b!=null)gain(b,2,'a familiar face on the panel');Object.keys(S.bugs).forEach(nid=>{const o=S.bugs[nid];S.players[o].money+=1;log('🏔️ Global skim from '+NMAP[nid].name.join(' ')+': '+pname(o)+' +$1.')});}},
-{id:'quikrob',icon:'🎭',title:'QUIKSTOP ROBBERY',text:'A ski mask, a shopping bag, an empty register. The tapes are… missing.',
- run(){setMood('CALM','a ski mask, a shopping bag, an empty register');const q=S.owner.quik;if(q==null){S.players.forEach((pl,i)=>payVoid(i,1,'nobody was watching the till'));return}payVoid(q,2,'gone, just gone');const b=S.owner.bond007;if(b!=null)gain(b,2,'he was there in disguise (allegedly)');}},
-{id:'ibexams',icon:'📝',title:'IB EXAMS',text:'Papers, calculators, despair. The Diploma Programme does not grade on charisma.',
- run(){setMood('CALM','IB exams — despair, indexed');const ib=S.owner.ib;if(ib!=null)giveIntel(ib,2,'HL Economics pays off');const sc=S.owner.school;if(sc!=null)giveIntel(sc,1,'the cohort crammed');S.players.forEach((pl,i)=>{const charts=NODES.filter(n=>n.type==='CHART'&&S.owner[n.id]===i).length;if(charts===0&&pl.intel>0){pl.intel-=1;fxAt(i,'🛈−1','#55c1ff');log('📝 '+pname(i)+' didn’t do the reading: −1 Intel.')}});}},
-{id:'profit',icon:'⛽',title:'PROFIT WARNING… FOR OTHERS',text:'Markets wobble, people stress-eat. Quikstop does just fine.',
- run(){setMood('CALM','profit warning… for others');const q=S.owner.quik;if(q!=null)gain(q,4,'snack economics');else log('⛽ Quikstop is unowned — the profits drift away.');}},
-{id:'quiet',icon:'🌙',title:'A QUIET QUARTER',text:'No tweets, no leaks, no rate decisions. Everyone quietly pockets a little extra.',
- run(){setMood('CALM','a quiet quarter — no tweets, no leaks');S.players.forEach((pl,i)=>gain(i,2,'a quiet quarter'));}},
-{id:'snoop',icon:'🔍',title:'REGULATORS SNOOP AROUND',text:'Somebody asked one question too many. The sweatiest players get a second look.',
- run(){setMood('CALM','regulators asking one question too many');const mx=Math.max(0,...S.players.map(pl=>pl.cortisol));if(mx<=0){log('🔍 Nobody has any Cortisol — the regulators go for coffee.');return}S.players.forEach((pl,i)=>{if(pl.cortisol===mx)addCortisol(i,1,'regulators circling','event')});}},
-{id:'tip',icon:'✉️',title:'ANONYMOUS TIP',text:'A brown envelope with no return address. Everyone learns something.',
- run(){setMood('CALM','a brown envelope, no return address');S.players.forEach((pl,i)=>giveIntel(i,1,'the envelope'));log('✉️ Every player gains 1 Intel.');}},
-{id:'frenzy',icon:'🗣️',title:'MEDIA FRENZY',text:'“Quite frankly…” The press needs a villain before deadline. Whoever owns the narrative picks one.',
- async run(){setMood('FRENZY','the press needs a villain before deadline');const pi=S.owner.press;if(pi==null){log('🗣️ The Press Room is unowned — the story dies in committee.');return}const rivals=rivalList(pi,6);const opts=rivals.map(i=>({label:S.players[i].name+' +2 🔥',v:i}));opts.push({label:'Sit on the story',v:-1});const v=await askPlayer(pi,{title:'MEDIA FRENZY',body:'You control the PRESS ROOM — torch which rival?',options:opts,def:-1});if(v>=0)addCortisol(v,2,'front-page frenzy','event');}},
-{id:'crackdown',icon:'🚨',title:'MONOPOLY ALERT',text:'The regulator finally does something. The hottest player pays for it.',
- run(){setMood('PANIC','crackdown — the regulator finally does something');const mx=Math.max(0,...S.players.map(pl=>pl.cortisol));if(mx<=0){log('🚨 Nobody is hot — the crackdown hits an empty office.');return}S.players.forEach((pl,i)=>{if(pl.cortisol===mx)payFee(i,4,'crackdown fine')});const bs=S.owner.bigshort;if(bs!=null)gain(bs,3,'the cinema called it');}},
-{id:'tapes',icon:'🗑️',title:'THE TAPES GO MISSING',text:'A shredder runs all night. What you knew, you no longer know — unless you kept copies.',
- run(){setMood('CALM','the tapes go missing — a shredder runs all night');S.players.forEach((pl,i)=>{if(S.owner.whistle===i){giveIntel(i,2,'the Whistleblower kept copies')}else if(S.owner.jt===i){giveIntel(i,2,'JTPortal keeps backups')}else if(pl.intel>0){pl.intel-=1;fxAt(i,'🛈−1','#55c1ff');log('🗑️ '+pname(i)+' loses 1 Intel — the tapes are gone.')}});}},
-{id:'bigscreen',icon:'🎬',title:'THE BIG SHORT SCREENING',text:'Brad Pitt explains subprime with a Jenga tower. Everyone watches. Nobody learns.',
- run(){setMood('FRENZY','The Big Short screens to a packed house');const bs=S.owner.bigshort;if(bs!=null)gain(bs,3,'packed house');const br=S.owner.brad;if(br!=null)gain(br,2,'he was right there on screen');const h=S.owner.hedge;if(h!=null)gain(h,2,'somebody was short the whole time');}},
-{id:'madeout',icon:'🟣',title:'MADE PAYS OUT… PROBABLY',text:'The purple graphic does… something. Money appears. Explanations do not.',
- run(){setMood(S.mood,'MADE does… something');if(Math.random()<1/3){madePay();log('🟣 MADE has paid out. Nobody knows why. NOBODY.')}else log('🟣 MADE remains unexplained. Again.');}}
+ run(){setMood('BOOM','WTI +12% — crude goes vertical');[['oil',6,'crude windfall'],['oilgraph',2,'the graph called it'],['tanker',3,'tankers rechartered at panic rates'],['petronas',3,'the national oil company cashes in']].forEach(a=>payNode(a[0],a[1],a[2]));eachPlayer(p=>p.money=Math.max(0,p.money-2));log('Everyone pays $2 at the pump.')}},
+{id:'goldrush',icon:'🪙',title:'GOLD RUSH',text:'The shiny stuff. Coins and the big Australian both pay out.',
+ run(){setMood('BOOM','gold goes vertical');payNode('gold',5,'gold rush');payNode('bhp',3,'the big Australian')}},
+{id:'coalrush',icon:'🚂',title:'COAL RUSH',text:'Tonnage by rail and by sea. The train, the docks, the barrels and BHP all get paid.',
+ run(){setMood('BOOM','coal tonnage surges');[['train',3,'express tonnage'],['port',3,'the docks are full'],['barrels',2,'stacked and shipped'],['bhp',3,'pit to port']].forEach(a=>payNode(a[0],a[1],a[2]))}},
+{id:'bondmageddon',icon:'📊',title:'BONDMAGEDDON',text:'The bond markets revolt. The charts pay their owners, the Bond Desk collects the tolls, and every bank takes a haircut.',
+ run(){setMood('PANIC','the bond markets revolt');COUNTRY.forEach(id=>payNode(id,1,'yield spike'));payNode('tenyear',3,'the master chart');payNode('bond',4,'the desk collects the tolls');payNode('leak',2,'the leak was right');eachPlayer(p=>{if(ownsType(p.i,'BANK')){p.money=Math.max(0,p.money-3);log(p.name+' takes a $3 haircut (owns a bank).')}})}},
+{id:'rbahike',icon:'🏛️',title:'RBA CASH-RATE DECISION',text:'The cash rate moves. The chart pays out. Anyone holding a bank or a regulator takes a point of Cortisol — unless the Governor is on their side.',
+ run(){setMood('PANIC','the cash rate moves');payNode('cash',2,'you set the rate');eachPlayer(p=>{if(owns(p.i,'bullock')){log(p.name+' is briefed by the Governor — no Cortisol.');return}if(ownsType(p.i,'BANK')||ownsType(p.i,'REGULATOR'))addCort(p.i,1,'the rate decision')})}},
+{id:'crackdown',icon:'🚔',title:'REGULATOR CRACKDOWN',text:'ASIC and the ACCC come knocking. Every player with 4 or more exhibits takes a point of Cortisol.',
+ run(){setMood('PANIC','the regulators come knocking');eachPlayer(p=>{if(ownedBy(p.i).length>=4)addCort(p.i,1,'regulator crackdown')})}},
+{id:'ceoleak',icon:'📸',title:'CEO PHOTO LEAKS',text:'A photo of the CEO surfaces. Coal Corp HQ pays out — unless the Press Room or Fox spins it, or Mark Watson personally deflects it.',
+ run(){const owner=S.owner.coal;if(owner==null){log('The photo leaks. Nobody owns Coal Corp HQ — no one cares.');return}const p=S.players[owner];if(owns(owner,'press')||owns(owner,'fox')||owns(owner,'watson')){pay(owner,4,'the photo is spun');log(p.name+' owns the narrative — the leak is buried.');return}addCort(owner,2,'CEO photo leak');log(p.name+' is in the photo. +2 Cortisol.')}},
+{id:'profitwarn',icon:'⚠️',title:'PROFIT WARNING',text:'Quikstop issues a warning. The storefront pays out. Every other corporate takes a point of Cortisol.',
+ run(){payNode('quik',4,'profit warning');eachPlayer(p=>{if(ownsType(p.i,'CORPORATE')&&!owns(p.i,'quik'))addCort(p.i,1,'profit warning')})}},
+{id:'insider',icon:'⚠️',title:'INSIDER TRADING GRAPHIC',text:'The graphic is circled in red. Every player with 3 or more Intel takes a point of Cortisol.',
+ run(){eachPlayer(p=>{if(p.intel>=3)addCort(p.i,1,'insider trading graphic')})}},
+{id:'budget',icon:'🏛️',title:'BUDGET NIGHT',text:'The Treasurer speaks. Every player with a regulator pays $1 to the Treasury and gains a point of Cortisol.',
+ run(){eachPlayer(p=>{if(ownsType(p.i,'REGULATOR')){p.money=Math.max(0,p.money-1);addCort(p.i,1,'budget night');log(p.name+' pays $1 to the Treasury.')}})}},
+{id:'tariffs',icon:'🦅',title:'TRUMP TWEETS TARIFFS',text:'The tweets move markets. US yields pay out. Every player with a bank takes a point of Cortisol.',
+ run(){setMood('PANIC','tariffs tweeted');payNode('us',2,'tariff spike');eachPlayer(p=>{if(ownsType(p.i,'BANK'))addCort(p.i,1,'tariff tweet')})}},
+{id:'mediafrenzy',icon:'📰',title:'MEDIA FRENZY',text:'The news cycle spins up. Media nodes pay double this turn.',
+ run(){setMood('FRENZY','the news cycle spins up');eachPlayer(p=>{const n=ownedBy(p.i).filter(id=>NMAP[id].type==='MEDIA').length;if(n)pay(p.i,n*2,'media frenzy')})}},
+{id:'quiet',icon:'😌',title:'A QUIET DAY',text:'Nothing happens. The market is calm. Cortisol ticks down.',
+ run(){setMood('CALM','a quiet day');eachPlayer(p=>{if(p.cort>0){p.cort--;log(p.name+' loses a point of Cortisol.')}})}},
+{id:'boom',icon:'📈',title:'COMMODITIES BOOM',text:'Everything that comes out of the ground pays an extra $1 this turn.',
+ run(){setMood('BOOM','commodities boom');eachPlayer(p=>{const n=ownedBy(p.i).filter(id=>NMAP[id].type==='COMMODITY').length;if(n)pay(p.i,n,'commodities boom')})}},
+{id:'panic',icon:'📉',title:'MARKET PANIC',text:'The banks take a haircut. Every bank pays $1 less this turn.',
+ run(){setMood('PANIC','market panic');eachPlayer(p=>{const n=ownedBy(p.i).filter(id=>NMAP[id].type==='BANK').length;if(n){p.money=Math.max(0,p.money-n);log(p.name+' takes a $'+n+' haircut.')}})}},
+{id:'intel',icon:'🔍',title:'INTEL DROP',text:'Someone talked. Every player gains a point of Intel.',
+ run(){eachPlayer(p=>{p.intel++;log(p.name+' gains 1 Intel.')})}},
+{id:'cort',icon:'😰',title:'CORTISOL SPIKE',text:'The stress is getting to everyone. Every player gains a point of Cortisol.',
+ run(){eachPlayer(p=>addCort(p.i,1,'cortisol spike'))}},
+{id:'salary',icon:'💰',title:'PAYDAY',text:'Everyone gets paid. $3 each, plus whatever the market is doing.',
+ run(){eachPlayer(p=>pay(p.i,3,'payday'))}},
+{id:'raid',icon:'🚔',title:'REGULATOR RAID',text:'The regulators raid the player with the highest Cortisol. Two of their best exhibits are seized, they are fined 30% of their cash, and they are cuffed for 7 seconds.',
+ run(){const target=S.players.filter(p=>p.alive&&p.cort>=4).sort((a,b)=>b.cort-a.cort)[0];if(!target){log('The regulators look around. Nobody is stressed enough to raid.');return}raid(target.i)}},
+{id:'made',icon:'🟣',title:'MADE PAYS OUT',text:'The purple graphic does its thing. Nobody knows why.',
+ run(){const owner=S.owner.made;if(owner==null){log('🟣 MADE remains unexplained. Again.');return}const p=S.players[owner];pay(owner,10,'MADE pays out');p.intel++;eachPlayer(q=>{if(q.i!==owner){q.money=Math.max(0,q.money-3);addCort(q.i,1,'MADE');}});log('🟣 MADE pays out to '+p.name+'. Everyone else pays $3 and gains a point of Cortisol. Nobody knows why.')}},
+{id:'whistle',icon:'🕵️',title:'THE WHISTLEBLOWER',text:'Half a confession. Every player gains a point of Intel.',
+ run(){eachPlayer(p=>{p.intel++;log(p.name+' gains 1 Intel from the whistleblower.')})}},
+{id:'golf',icon:'⛳',title:'THE GOLF CLUB',text:'Deals on the back nine. The owner of the Golf Club collects $1 from every other player.',
+ run(){const owner=S.owner.golf;if(owner==null)return;eachPlayer(p=>{if(p.i!==owner){p.money=Math.max(0,p.money-1);pay(owner,1,'golf club toll')}})}},
+{id:'sisy',icon:'🪨',title:'THE SISYPHUS BOULDER',text:'It rolls back down. The owner can push it again for +$3 and +1 Cortisol.',
+ run(){const owner=S.owner.sisy;if(owner==null)return;log(S.players[owner].name+' can push the boulder again.')}},
+{id:'asics',icon:'👟',title:'THE RUNNING SHOE',text:'You are always jogging. The owner gets a free −1 Cortisol.',
+ run(){const owner=S.owner.asics;if(owner==null)return;const p=S.players[owner];if(p.cort>0){p.cort--;log(p.name+' jogs off a point of Cortisol.')}}},
+{id:'toktimer',icon:'⏱️',title:'TOKTIMER',text:'The clock is running. Time is information. Every player gains a point of Intel.',
+ run(){eachPlayer(p=>{p.intel++;log(p.name+' gains 1 Intel from the clock.')})}}
 ];
 const CARDBYID={};CARDS.forEach(c=>CARDBYID[c.id]=c);
 const BUZZWORDS=['WORLD ECONOMIC FORUM','NESA','JAKE TOMKINS','ELIJAH SON','SETH WEGRZYN','AIDAN NEWLING','DANIEL SWAIN','TOKTIMER','RBA','BIG BESSENT','NEW LAKEMBA','JTPORTAL','MCMETRO','CEO OF COAL','INKDIN','HORMUZ','PYONGYANG UNIVERSITY','LOW CORTISOL'];
