@@ -29,11 +29,11 @@ const BOT_CHARACTERS={
  'Sisyphus':null,
  'Brad (not Pitt)':null,
  'Leaked Larry':null,
- 'Hedge Fund Hannah':null,
  'CEO OF COAL': "markwatson",
  'Short Seller Sal':null,
  'Backroom Barry':null,
- 'QUITE FRANKLY':"DJT"
+ 'QUITE FRANKLY':"DJT",
+ 'Ed Wilson':"edwilson"
 };
 const BOT_NAMES=Object.keys(BOT_CHARACTERS);
 let S=null;
