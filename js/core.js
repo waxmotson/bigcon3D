@@ -105,9 +105,18 @@ function initGame(defs,opts){
  const bots=Math.max(0,Math.min(MAXENT-defs.length,opts.bots|0));
  const used=new Set(defs.map(d=>d.char));const names=shuffle(BOT_NAMES);
  const all=defs.map(d=>({name:d.name,char:d.char,bot:false}));
+ // Explicit aliases ensure named bots with an existing portrait always use that portrait.
+ // Exact name/id matches are also picked up automatically as the lists grow.
+ const BOT_CHAR_MAP={'Jake Tomkins':'tomkins'};
+ const normalise=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
  for(let b=0;b<bots;b++){
-  const free=CHARS.filter(c=>!used.has(c.id));const ch=free.length?free[Math.floor(Math.random()*free.length)]:CHARS[Math.floor(Math.random()*CHARS.length)];used.add(ch.id);
-  all.push({name:names[b%names.length],char:ch.id,bot:true});
+  const name=names[b%names.length];
+  const exact=CHARS.find(c=>normalise(c.name)===normalise(name)||normalise(c.id)===normalise(name));
+  const preferred=charMeta(BOT_CHAR_MAP[name])||exact;
+  let ch=preferred&&!used.has(preferred.id)?preferred:null;
+  if(!ch){const free=CHARS.filter(c=>!used.has(c.id));ch=free.length?free[Math.floor(Math.random()*free.length)]:CHARS[Math.floor(Math.random()*CHARS.length)]}
+  used.add(ch.id);
+  all.push({name,char:ch.id,bot:true});
  }
  const quikSlot=Math.floor(Math.random()*QUIK_SLOTS.length),seed=(Math.random()*1e9)|0;
  const a=Math.random()*Math.PI*2,half=270;
