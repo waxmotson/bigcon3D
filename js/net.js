@@ -192,6 +192,7 @@ function updateStartBtn(){
 function showLobby(asHost){
  $('hostForm').classList.remove('show');$('joinForm').classList.remove('show');$('chooser').style.display='none';
  $('lobbyView').style.display='block';$('roomCodeBig').textContent=Net.roomLabel||Net.roomCode;
+ setTimeout(()=>{const e=$('lobbyView');if(e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'})},30);
  $('goalInput').disabled=!asHost;$('botsInput').disabled=!asHost;
  $('goalInput').value=Net.goal;$('botsInput').value=Net.bots;setGoalUI();
  renderLobbyChat();renderCharGrid();renderLobbyList();updateStartBtn();
@@ -204,12 +205,13 @@ function hostCreate(name,offline){
  Net.role='host';Net.myName=name;Net.playerId=getPlayerId();Net.myIdx=0;Net.roster=[{name,playerId:Net.playerId,conn:null,char:null}];Net.conns=[null];
  if(offline){Net.roomCode='SOLO';Net.roomLabel='SOLO — YOU VS THE BOTS';showLobby(true);setNetStatus('Offline room — no friends can join. Hit BOARD THE JET.');return}
  setNetStatus('Contacting the matchmaker…');
- Net.roomCode=genCode();Net.roomLabel=codeLabel(Net.roomCode);hostOpenPeer();startHostHeartbeat();
+ Net.roomCode=genCode();Net.roomLabel=codeLabel(Net.roomCode);Net.peerOpen=false;hostOpenPeer();startHostHeartbeat();
+ clearTimeout(Net.openTimer);Net.openTimer=setTimeout(()=>{if(!Net.peerOpen)setNetStatus('Cannot reach the PeerJS matchmaker (network, firewall or ad-blocker?). You can still play SOLO vs bots.',true)},12000);
 }
 function hostOpenPeer(){
  const code=Net.roomCode,old=Net.peer;if(old&&!old.destroyed){try{old.destroy()}catch(_){}}
  const p=new Peer(PFX+code,BIGCON_PEER_OPTIONS);Net.peer=p;let opened=false;
- p.on('open',()=>{opened=true;if(Net.peer!==p)return;showLobby(true);if(!Net.started)setNetStatus('Room created — seats up to '+MAXHUMANS+' humans. Waiting for co-conspirators…')});
+ p.on('open',()=>{opened=true;Net.peerOpen=true;if(Net.peer!==p)return;showLobby(true);if(!Net.started)setNetStatus('Room created — seats up to '+MAXHUMANS+' humans. Waiting for co-conspirators…')});
  p.on('disconnected',()=>{if(Net.peer!==p||p.destroyed)return;try{p.reconnect()}catch(_){setTimeout(()=>{if(Net.peer===p)hostOpenPeer()},1500)}});
  p.on('error',e=>{
   const ty=e&&e.type;if(Net.peer!==p)return;

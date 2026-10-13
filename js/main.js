@@ -234,14 +234,14 @@ function enterGame(isGuest){
  Game.started=true;
  if(isGuest){World.build(S.seed,S.quikSlot)}
  $('setup').style.display='none';$('game').style.display='block';
- R.init($('gl'));R.buildWorld();R.setWeapon('stapler');
+ try{if(typeof THREE==='undefined')throw new Error('three.js did not load from the CDN');R.init($('gl'));R.buildWorld();R.setWeapon('stapler')}catch(e){console.error(e);UI.fatal('Could not start the 3D view: '+e.message+' (WebGL needs to be enabled in your browser).');return}
  Game.lanes=EDGES.map(e=>[NMAP[e[0]],NMAP[e[1]]]).filter(l=>l[0]&&l[1]);
  bindInput();
  const jp=jetPos(curT());Me.x=jp.x;Me.y=jp.y;Me.z=jp.z;Me.yaw=Math.atan2(S.jet.dx,-S.jet.dz);Me.pitch=-.15;
  const q=P[Net.myIdx]||(P[Net.myIdx]={});Object.assign(q,{x:Me.x,y:Me.y,z:Me.z,yaw:Me.yaw,pitch:0,w:'stapler',fl:16});
  SFX.init();SFX.music=true;SFX.startMusic();
  // host simulation keeps ticking even if this tab loses focus (browsers throttle it, but never stop it)
- if(Net.role==='host'){let last=performance.now();setInterval(()=>{const now=performance.now(),dt=Math.min(.25,(now-last)/1000);last=now;hostStep(dt);netStep(dt)},50)}
+ if(Net.role==='host'){let last=performance.now();setInterval(()=>{const now=performance.now();let rem=Math.min(3,(now-last)/1000);last=now;while(rem>1e-4){const dt=Math.min(.05,rem);rem-=dt;hostStep(dt)}netStep(.05)},50)}
  let lastF=performance.now(),hudT=0,miniT=0,mapT=0;
  const frame=now=>{
   requestAnimationFrame(frame);

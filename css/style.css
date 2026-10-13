@@ -1,19 +1,20 @@
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;height:100%;overflow-x:hidden}
+html,body{margin:0;padding:0;min-height:100%}
+body{overflow-x:hidden}
 body{font-family:system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#f2f2f2;background:#1d201f}
 .serif,.bigtitle,.winname,.codeline .cc,.mtitle,.btitle{font-family:'Times New Roman',Times,serif}
 button{font-family:inherit}
 /* ---------- lobby (carried over from v1.5) ---------- */
 #toast{position:fixed;top:14px;left:50%;transform:translate(-50%,-70px);background:#168388;color:#fff;font-weight:800;padding:10px 24px;border:2px solid #000;box-shadow:0 10px 30px rgba(0,0,0,.6);opacity:0;transition:all .35s;z-index:90;pointer-events:none;font-size:14px;letter-spacing:1px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
 #toast.show{opacity:1;transform:translate(-50%,0)}
-#setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px}
-.splash-logo{width:min(100%,560px);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;background:#000;overflow:hidden}
+#setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 24px 40px}
+.splash-logo{width:min(100%,560px,30vh);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;background:#000;overflow:hidden}
 .splash-logo img{display:block;width:100%;height:100%;object-fit:fill}
 .setupcard{background:#111413;max-width:720px;width:100%;border:2px solid #168388;padding:28px 32px;box-shadow:0 24px 80px rgba(0,0,0,.75);margin-top:10px}
 .bigtitle{font-size:34px;font-weight:900;letter-spacing:4px;background:#168388;color:#fff;display:inline-block;padding:8px 16px;margin:0 0 8px}
 .tag{font-size:16px;font-style:italic;color:burlywood;margin:10px 0 4px}
 .intro{font-size:13px;line-height:1.55;color:#d8d8d8}
-.chooserow{display:flex;gap:10px;margin:18px 0}
+.chooserow{display:flex;gap:10px;margin:14px 0 6px}
 .modebtn{flex:1;font-size:16px;font-weight:900;letter-spacing:1px;padding:16px 10px;border:2px solid #168388;background:#000;cursor:pointer;color:#fff}
 .modebtn:hover{background:#168388}
 .netform{display:none;flex-direction:column;gap:10px;margin:14px 0}
@@ -121,7 +122,7 @@ button{font-family:inherit}
 #hint .hn{font-family:'Times New Roman',serif;font-weight:900;font-size:20px;letter-spacing:1px}
 #hint .hs{font-size:11.5px;color:burlywood;font-style:italic}
 #hint .hk{display:inline-block;background:#f5c542;color:#000;font-weight:900;padding:1px 7px;margin:0 3px}
-#capbar{height:8px;width:260px;background:#000;border:1px solid #fff;margin:7px auto 0;display:none}
+#capbar{position:absolute;left:50%;top:57%;transform:translateX(-50%);height:8px;width:260px;background:#000;border:1px solid #fff;display:none}
 #capbar i{display:block;height:100%;width:0;background:#7fe08d}
 #banner{position:absolute;top:84px;left:50%;transform:translateX(-50%);text-align:center;width:min(780px,92vw)}
 .bn{background:rgba(0,0,0,.8);border:2px solid #168388;padding:12px 18px;margin-bottom:8px;animation:bnin .35s cubic-bezier(.2,1.6,.4,1)}

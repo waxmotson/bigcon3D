@@ -57,6 +57,7 @@ SFX.toggle=function(){SFX.music=!SFX.music;UI.toast(SFX.music?'ðŸŽµ music on':'ð
 
 /* ---------------- toasts, banners, feed ---------------- */
 UI.toast=function(msg){
+ if(!Game.started){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(UI._tt);UI._tt=setTimeout(()=>t.classList.remove('show'),2600);return}
  const box=$('toasts'),d=document.createElement('div');d.textContent=msg;box.appendChild(d);
  while(box.children.length>3)box.removeChild(box.firstChild);setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d)},3200);
 };
@@ -261,7 +262,7 @@ UI.rules=function(){
 UI.bindSetup=function(){
  const dl=$('buzzwords');BUZZWORDS.forEach(b=>{const o=document.createElement('option');o.value=b;dl.appendChild(o)});
  setTimeout(()=>{const img=$('splashLogo');if(img)img.src='big con logo.png'},5000);
- const show=f=>{$('hostForm').classList.remove('show');$('joinForm').classList.remove('show');$(f).classList.add('show')};
+ const show=f=>{$('hostForm').classList.remove('show');$('joinForm').classList.remove('show');$(f).classList.add('show');setNetStatus(f==='hostForm'?(UI.solo?'Solo: type your name, then start the lobby.':'Type your name, then create the room.'):'Type your name and the room buzzword.');setTimeout(()=>{const e=$(f);if(e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'center'})},30)};
  try{const n=localStorage.getItem('bigcon3d-name');if(n){$('hostName').value=n;$('joinName').value=n}}catch(e){}
  $('btnHost').onclick=()=>{UI.solo=false;show('hostForm');$('btnCreate').textContent='CREATE ROOM';$('hostName').focus()};
  $('btnSolo').onclick=()=>{UI.solo=true;show('hostForm');$('btnCreate').textContent='START SOLO LOBBY';$('hostName').focus()};
