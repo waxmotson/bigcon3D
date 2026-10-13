@@ -4,6 +4,9 @@ A multiplayer first-person battle royale built on the rules of **THE BIG CON**. 
 
 **Play:** serve the folder over HTTP (e.g. GitHub Pages, or `python3 -m http.server`) and open `index.html`. Desktop browser with mouse + keyboard. Opening via `file://` won't load the card images.
 
+## Characters
+Drop a `.png` into the `characters/` folder and commit it. On the next page load the lobby automatically picks it up (via the public GitHub API) and makes it available as a selectable face. The filename (without extension, lowercased) becomes the internal id; a pretty name is generated from it. The original 8 characters are bundled as a fallback if the API is unreachable.
+
 ## How the original mechanics map across
 
 | THE BIG CON | THE BIG CON 3D |
@@ -33,11 +36,13 @@ Peer-to-peer via PeerJS, same JTPortal buzzword room codes as v1.5. One browser 
 
 The host is authoritative for money, Intel, Cortisol, ownership, health, the dragnet and the event deck. Clients own their own movement and aim; the host validates every shot (rate, range, proximity) and every deal (position, price). This is a casual-play trust model, not anti-cheat.
 
+Connection reliability has been improved (explicit PeerJS cloud host, immediate data listeners, hello retry).
+
 ## Layout
 ```
 index.html          page + HUD markup
 css/style.css
-js/data.js          exhibits, threads, moods, 25-card deck (carried over verbatim from v1.5)
+js/data.js          exhibits, threads, moods, 25-card deck + auto-loaded characters
 js/econ.js          income + seizure pricing (verbatim from v1.5)
 js/world.js         arena, collision, raycasts, weapons table
 js/core.js          host simulation: damage, zone, ticks, events, abilities, win checks
