@@ -133,17 +133,19 @@ function newPlayer(d,i){return{name:d.name,color:playerColor(i),char:d.char||nul
 function initGame(defs,opts){
  const bots=Math.max(0,Math.min(MAXENT-defs.length,opts.bots|0));
  const used=new Set(defs.map(d=>d.char));
- // Null means a deliberately blank face. Put mapped characters first so the first
- // three (elite) bot slots get faces; regular bots always remain blank.
+ // Only mapped characters may be assigned to the first three elite bots.
+ // Every regular bot name comes from the null-mapped pool, so regular bots
+ // can never be assigned a character image.
  const named=shuffle(BOT_NAMES.filter(name=>BOT_CHARACTERS[name]));
- const blank=shuffle(BOT_NAMES.filter(name=>!BOT_CHARACTERS[name]));
- const names=named.concat(blank);
+ const blank=shuffle(BOT_NAMES.filter(name=>BOT_CHARACTERS[name]===null));
  const all=defs.map(d=>({name:d.name,char:d.char,bot:false}));
- const normalise=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
  for(let b=0;b<bots;b++){
-  const name=names[b%names.length];
+  const elite=b<3;
+  const pool=elite?named:blank;
+  if(!pool.length)continue;
+  const name=pool[(elite?b:b-3)%pool.length];
   let ch=null;
-  if(b<3&&BOT_CHARACTERS[name]){
+  if(elite){
    const preferred=charMeta(BOT_CHARACTERS[name]);
    ch=preferred&&!used.has(preferred.id)?preferred:null;
   }
