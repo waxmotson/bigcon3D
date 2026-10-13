@@ -172,7 +172,8 @@ function update(dt){
  }else{
   const crouch=!!Keys.KeyC,sprint=!!sprintK&&fwd>0&&!crouch&&!Me.ads;Me.sprinting=sprint;
   let spd=(crouch?3.4:sprint?9.6:6.5)*speedMult(me,T);if(Me.ads)spd*=.72;
-  if(Me.onGround&&laneNear(Me.x,Me.z))spd*=1.12;
+  // The red evidence threads are sprint lanes: give a strong bonus while running along them.
+  if(Me.onGround&&sprint&&laneNear(Me.x,Me.z))spd*=1.4;
   const k=Math.min(1,dt*(Me.onGround?13:3));
   Me.vx+=(wx*spd-Me.vx)*k;Me.vz+=(wz*spd-Me.vz)*k;
   if(Game.space&&Me.onGround){Me.vy=8.6;Me.onGround=false}Game.space=false;
@@ -251,7 +252,7 @@ function enterGame(isGuest){
    const p=myP(),alive=p&&p.alive;
    const sp=!alive&&Game.spec>=0;
    const w=curW(),W=w?WEAPONS[w.id]:null,ads=Me.ads&&alive&&Me.mode==='ground';
-   R.render(dt,{x:Me.x,y:Me.y,z:Me.z,yaw:Me.yaw,pitch:Me.pitch,eye:Me.eye,bob:Me.bob,recoil:Me.recoil,roll:(Keys.KeyD?-.012:Keys.KeyA?.012:0)*(Me.mode==='ground'?1:0),ads,wid:w&&w.id,fov:ads?(W&&W.zoom?78/W.zoom:60):(Me.sprinting?84:78),flashT:Me.flashT,
+   R.render(dt,{x:Me.x,y:Me.y,z:Me.z,yaw:Me.yaw,pitch:Me.pitch,eye:Me.eye,bob:Me.bob,recoil:Me.recoil,roll:(Keys.KeyD?-.012:Keys.KeyA?.012:0)*(Me.mode==='ground'?1:0),ads,wid:w&&w.id,mapView:Me.mode==='jet',fov:ads?(W&&W.zoom?78/W.zoom:60):(Me.sprinting?84:78),flashT:Me.flashT,
     third:sp||(!alive&&Game.spec<0&&false),follow:Game.spec,hideVm:!alive||Me.mode!=='ground',vmDip:Me.sprinting?.06:0});
    $('scope').style.display=ads&&W&&W.zoom?'block':'none';$('cross').className=ads?'ads':'';
    hudT+=dt;if(hudT>.1){hudT=0;UI.hud()}
