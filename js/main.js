@@ -168,8 +168,8 @@ function update(dt){
  }else if(Me.mode==='air'){
   const g=World.groundAt(Me.x,Me.z,Me.y),chute=Me.y>g+0&&Me.y<g+38;
   const term=chute?-9:-40;Me.vy=Math.max(term,Me.vy-(chute?60:30)*dt);if(chute&&Me.vy<-9)Me.vy=Math.min(-9,Me.vy+60*dt);
-  const sp=chute?15:(fwd>0?26:13);
-  Me.vx+=(wx*sp-Me.vx)*Math.min(1,dt*2.2);Me.vz+=(wz*sp-Me.vz)*Math.min(1,dt*2.2);
+  const steer=Math.hypot(wx,wz);const sp=chute?15:(steer>0?26:0);
+  Me.vx+=((steer?wx*sp:0)-Me.vx)*Math.min(1,dt*2.2);Me.vz+=((steer?wz*sp:0)-Me.vz)*Math.min(1,dt*2.2);
   Me.x+=Me.vx*dt;Me.z+=Me.vz*dt;Me.y+=Me.vy*dt;Me.x=Math.max(-HX,Math.min(HX,Me.x));Me.z=Math.max(-HZ,Math.min(HZ,Me.z));
   const gg=World.groundAt(Me.x,Me.z,Me.y+1.5);
   if(Me.y<=gg){Me.y=gg;Me.vy=0;Me.vx*=.2;Me.vz*=.2;Me.mode='ground';Me.onGround=true;SFX.play('jump');R.shake=.1;UI.toast('LANDED — loot up, find an exhibit')}
