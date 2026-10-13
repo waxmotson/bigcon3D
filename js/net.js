@@ -245,7 +245,7 @@ function connectGuest(){
   },12000);
   c.on('open',()=>{clearTimeout(to);guestRetry=0;c.__lastSeen=Date.now();sendConn(c,{t:'hello',name:Net.myName,playerId:Net.playerId});setNetStatus('Connected — waiting for the lobby…');startGuestHeartbeat(c)});
   c.on('data',d=>{c.__lastSeen=Date.now();try{onGuestData(d)}catch(e){console.error(e)}});
-  c.on('close',()=>guestLost());c.on('error',()=>guestLost());
+  c.on('close',()=>{if(c.__lost)return;c.__lost=true;guestLost()});c.on('error',()=>{if(c.__lost)return;c.__lost=true;guestLost()});
  });
  p.on('error',e=>{
   if(Net.peer!==p)return;
