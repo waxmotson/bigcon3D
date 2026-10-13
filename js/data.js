@@ -177,15 +177,24 @@ const MAXHUMANS=8,MAXENT=24;
 const CHARURL='./characters/';
 const CHARS=[
  {id:'markwatson',name:'Mark Watson',file:'markwatson.png'},
- {id:'tomkins',name:'Tomkins',file:'tomkins.png'},
+ {id:'tomkins',name:'Jake Tomkins',file:'tomkins.png'},
  {id:'jimchalmers',name:'Jim Chalmers',file:'jimchalmers.png'},
  {id:'bessock',name:'Bessock',file:'bessock.png'},
- {id:'calvinathanasius',name:'Calvin Athanasius',file:'calvinathanasius.png'},
- {id:'denialswan',name:'Denial Swan',file:'denialswan.png'},
+ {id:'calvinathanasius',name:'Aidan Newling / Calvin Athanasius',file:'calvinathanasius.png'},
+ {id:'denialswan',name:'Daniel Swain / Denial Swan',file:'denialswan.png'},
  {id:'japsnchen',name:'Japsn Chen',file:'japsnchen.png'},
- {id:'thousandyardwax',name:'Thousand Yard Wax',file:'thousandyardwax.png'}
+ {id:'thousandyardwax',name:'McMetro Max / Thousand Yard Wax',file:'thousandyardwax.png'},
+ {id:'thebigwegrzyn',name:'Seth Wegrzyn',file:'thebigwegrzyn.png'},
+ {id:'alexander_lane',name:'The guy from Toktimer / Alexander Lane',file:'Alexander_Lane.png'},
+ {id:'djt',name:'QUITE FRANKLY / DJT',file:'DJT.png'},
+ {id:'edwilson',name:'Ed Wilson',file:'edwilson.png'}
 ];
-function charMeta(id){return CHARS.find(c=>c.id===id)||null}
+// Character IDs are case-insensitive so roster mappings such as "DJT" and
+// "Alexander_Lane" still resolve after the directory scanner normalises IDs.
+function charMeta(id){
+ const key=String(id||'').toLowerCase().replace(/\\.[^.]+$/,'');
+ return CHARS.find(c=>c.id.toLowerCase()===key||c.file.replace(/\\.[^.]+$/,'').toLowerCase()===key)||null;
+}
 function charSrc(id){const c=charMeta(id);return c?CHARURL+c.file:''}
 // GitHub Pages cannot list a directory itself, so query the repository's public Contents API.
 // Existing names are preserved; newly uploaded image files become selectable automatically.
