@@ -196,3 +196,15 @@ const CARDS=[
 ];
 const CARDBYID={};CARDS.forEach(c=>CARDBYID[c.id]=c);
 const BUZZWORDS=['WORLD ECONOMIC FORUM','NESA','JAKE TOMKINS','ELIJAH SON','SETH WEGRZYN','AIDAN NEWLING','DANIEL SWAIN','TOKTIMER','RBA','BIG BESSENT','NEW LAKEMBA','JTPORTAL','MCMETRO','CEO OF COAL','INKDIN','HORMUZ','PYONGYANG UNIVERSITY','LOW CORTISOL'];
+const QUIK_HOME={x:350,y:430,rot:2};
+const QUIK_SLOTS=[
+ {x:350,y:430,rot:2,links:['coal','watson','bond007','market','train'],label:'the original servo · inner west'},
+ {x:1540,y:1210,rot:-2,links:['photo','bigshort','market','news'],label:'down by MarketPlace · the late shift'},
+ {x:2060,y:680,rot:1,links:['forklift','petronas','whistle'],label:'the docks servo · petrol & crude'},
+ {x:700,y:280,rot:-1,links:['rba','bullock','rock','westpac','cash'],label:'across from the Reserve Bank'},
+ {x:1120,y:1410,rot:2,links:['made','sat','news','photo'],label:'the unexplained servo · next to MADE'}
+];
+function applyQuikSlot(slot){
+ const q=NMAP.quik;if(!q||!slot)return;
+ q.x=slot.x;q.y=slot.y;q.rot=slot.rot;
+}
