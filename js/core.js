@@ -9,30 +9,31 @@ const GOAL_MIN=40,GOAL_MAX=999,GOAL_DEF=250;
 // Single editable map: bot display name -> character ID in js/data.js.
 // Use null for a random available character image.
 const BOT_CHARACTERS={
- 'Seth Wegrzyn':null,
- 'Aidan Newling':null,
+ 'Seth Wegrzyn': "thebigwegrzyn",
+ 'Aidan Newling':'calvinathanasius',
  'Daniel Swain':'denialswan',
  'Elijah Son':null,
  'Jake Tomkins':'tomkins',
  'Inkdin Intern':null,
- 'McMetro Mike':null,
+ 'McMetro Max': 'thousandyardwax',
  'Hormuz Harry':null,
- 'Low Cortisol Lou':null,
+ 'Low Cortisol Lucian':null,
  'Pyongyang Prof':null,
- 'New Lakemba Nick':null,
+ 'Pala diNenergy':null,
  'NESA Inspector':null,
  'Compliance Carl':null,
  'Bondmageddon Bob':null,
- 'Toktimer Tim':null,
+ 'The guy from Toktimer':'Alexander_Lane',
  'Quikstop Quentin':null,
  'Forklift Fred':null,
- 'Sisyphus Sam':null,
+ 'Sisyphus':null,
  'Brad (not Pitt)':null,
  'Leaked Larry':null,
- 'Hedge Hannah':null,
- 'Coal Corp Cathy':null,
+ 'Hedge Fund Hannah':null,
+ 'CEO OF COAL': "markwatson",
  'Short Seller Sal':null,
- 'Backroom Barry':null
+ 'Backroom Barry':null,
+ 'QUITE FRANKLY':"DJT"
 };
 const BOT_NAMES=Object.keys(BOT_CHARACTERS);
 let S=null;
