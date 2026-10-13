@@ -235,17 +235,37 @@ function connectGuest(){
  const p=new Peer(BIGCON_PEER_OPTIONS);Net.peer=p;
  p.on('open',()=>{
   const c=p.connect(PFX+Net.roomCode,{reliable:true});Net.conn=c;
-  const to=setTimeout(()=>{if(!c.open){setNetStatus('Could not reach room “'+Net.roomLabel+'”. Check the code, or ask the host to recreate it.',true);try{p.destroy()}catch(e){}}},15000);
+  const to=setTimeout(()=>{
+   if(!c.open){
+    setNetStatus('Room connection timed out — retrying '+Net.roomLabel+'…',true);
+    try{p.destroy()}catch(e){}
+    if(!Net.started&&guestRetry<4){guestRetry++;setTimeout(connectGuest,700*guestRetry)}
+    else if(!Net.started)setNetStatus('Could not reach room “'+Net.roomLabel+'”. Check the code and ask the host to keep the room open.',true);
+   }
+  },12000);
   c.on('open',()=>{clearTimeout(to);guestRetry=0;c.__lastSeen=Date.now();sendConn(c,{t:'hello',name:Net.myName,playerId:Net.playerId});setNetStatus('Connected — waiting for the lobby…');startGuestHeartbeat(c)});
   c.on('data',d=>{c.__lastSeen=Date.now();try{onGuestData(d)}catch(e){console.error(e)}});
   c.on('close',()=>guestLost());c.on('error',()=>guestLost());
  });
- p.on('error',e=>{if(e&&e.type==='peer-unavailable')setNetStatus('No room called “'+Net.roomLabel+'” right now.',true);else if(!Net.started)setNetStatus('Network error: '+(e&&e.type||'unknown'),true)});
+ p.on('error',e=>{
+  if(Net.peer!==p)return;
+  const ty=e&&e.type;
+  if(ty==='peer-unavailable'&&!Net.started&&guestRetry<4){
+   guestRetry++;setNetStatus('Room not visible yet — retrying '+Net.roomLabel+' ('+guestRetry+'/4)…',true);
+   setTimeout(()=>{if(!Net.started&&Net.peer===p)connectGuest()},700*guestRetry);return;
+  }
+  if(ty==='peer-unavailable')setNetStatus('No room called “'+Net.roomLabel+'” right now. Check the code and that the host is connected.',true);
+  else if(!Net.started)setNetStatus('Network error: '+(ty||'unknown')+' — check your connection and try again.',true);
+ });
 }
 function startGuestHeartbeat(c){clearInterval(guestHb);guestHb=setInterval(()=>{if(!c.open)return;sendConn(c,{t:'ping'});if(Date.now()-(c.__lastSeen||0)>CONN_TIMEOUT_MS){try{c.close()}catch(e){}}},HEARTBEAT_MS)}
 function guestLost(){
  clearInterval(guestHb);
- if(!Net.started){setNetStatus('Lost the room.',true);return}
+ if(!Net.started){
+  if(guestRetry++<4){setNetStatus('Connection dropped — retrying '+Net.roomLabel+' ('+guestRetry+'/4)…',true);setTimeout(connectGuest,700*guestRetry)}
+  else setNetStatus('Could not join the room. Check the code, host connection, and network, then try again.',true);
+  return;
+ }
  if(guestRetry++<6){UI.toast('Connection lost — reconnecting ('+guestRetry+')…');setTimeout(connectGuest,1200*guestRetry)}
  else UI.fatal('The host is gone. Reload to start again.');
 }
