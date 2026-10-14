@@ -188,9 +188,9 @@ UI.nodeImg=function(n){
    n._mm=im;
    im.onload=()=>{if(UI.mini)UI.mini()};
    im.onerror=()=>{n._mm=false;if(UI.mini)UI.mini()};
-   // Keep the repository-relative path intact; URL-encoding the whole string
-   // can produce incorrect paths for filenames containing spaces or symbols.
-   im.src=n.image;
+   // Match the renderer's asset URL handling. Node filenames commonly contain
+   // spaces, so encode the relative asset path before starting the request.
+   im.src=encodeURI(new URL(n.image,document.baseURI).href);
   }
  }
  return n._mm&&n._mm.complete&&n._mm.naturalWidth>0?n._mm:null;
