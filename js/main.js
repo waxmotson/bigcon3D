@@ -173,7 +173,7 @@ function update(dt){
   const jp=jetPos(T),j=S.jet,C=CABIN,rx=-j.dz,rz=j.dx;
   const jetMove=8*dt;
   Me.jetFwd=Me.jetFwd||0;Me.jetSide=Me.jetSide||0;
-  Me.jetFwd+=(-fwd)*jetMove;
+  Me.jetFwd+=fwd*jetMove;
   Me.jetSide+=side*jetMove;
   Me.jetFwd=Math.max(C.nose+1-C.fwd,Math.min(C.tail-1-C.fwd,Me.jetFwd));
   Me.jetSide=Math.max(-C.hw+1-C.side,Math.min(C.hw-1-C.side,Me.jetSide));
