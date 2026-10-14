@@ -177,12 +177,23 @@ UI.mapClick=function(e){
  if(b){act('fly',{nid:b.id});UI.mapClose()}
 };
 UI.nodeImg=function(n){
+ // Cache the image object immediately so repeated minimap frames don't start
+ // duplicate requests. Redraw when it finishes loading so a node doesn't stay
+ // on its emoji placeholder until the next unrelated HUD update.
  if(n._mm===undefined){
   n._mm=null;
   if(!n.image){n._mm=false}
-  else{const im=new Image();im.onload=()=>{n._mm=im};im.onerror=()=>{n._mm=false};im.src=encodeURI(n.image)}
+  else{
+   const im=new Image();
+   n._mm=im;
+   im.onload=()=>{if(UI.mini)UI.mini()};
+   im.onerror=()=>{n._mm=false;if(UI.mini)UI.mini()};
+   // Keep the repository-relative path intact; URL-encoding the whole string
+   // can produce incorrect paths for filenames containing spaces or symbols.
+   im.src=n.image;
+  }
  }
- return n._mm||null;
+ return n._mm&&n._mm.complete&&n._mm.naturalWidth>0?n._mm:null;
 };
 
 UI.mini=function(){
