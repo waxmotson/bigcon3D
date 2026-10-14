@@ -173,9 +173,11 @@ function update(dt){
   const jp=jetPos(T),j=S.jet,C=CABIN,rx=-j.dz,rz=j.dx;
   const jetMove=8*dt;
   Me.jetFwd=Me.jetFwd||0;Me.jetSide=Me.jetSide||0;
-  Me.jetFwd+=fwd*jetMove;
-  Me.jetSide+=side*jetMove;
-  Me.jetFwd=Math.max(C.nose+1-C.fwd,Math.min(C.tail-1-C.fwd,Me.jetFwd));
+ // wx,wz is the walk direction relative to where you're LOOKING; convert it to cabin axes
+Me.jetFwd+=(wx*j.dx+wz*j.dz)*jetMove;     // toward the nose
+Me.jetSide+=(wx*rx+wz*rz)*jetMove;        // toward the right wall
+// CABIN.nose/tail are jet-local z (nose = -z) but C.fwd is distance toward the nose, so the limits flip
+Me.jetFwd=Math.max(-(C.tail-1)-C.fwd,Math.min(-(C.nose+1)-C.fwd,Me.jetFwd));
   Me.jetSide=Math.max(-C.hw+1-C.side,Math.min(C.hw-1-C.side,Me.jetSide));
   Me.x=jp.x+j.dx*(C.fwd+Me.jetFwd)+rx*(C.side+Me.jetSide);
   Me.y=jp.y+C.floor;Me.z=jp.z+j.dz*(C.fwd+Me.jetFwd)+rz*(C.side+Me.jetSide);

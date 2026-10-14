@@ -176,6 +176,15 @@ UI.mapClick=function(e){
  let b=null,bd=34;for(const n of NODES){const C=B2C(n.wx,n.wz),d=Math.hypot(C[0]-x,C[1]-y);if(d<bd){bd=d;b=n}}
  if(b){act('fly',{nid:b.id});UI.mapClose()}
 };
+UI.nodeImg=function(n){
+ if(n._mm===undefined){
+  n._mm=null;
+  if(!n.image){n._mm=false}
+  else{const im=new Image();im.onload=()=>{n._mm=im};im.onerror=()=>{n._mm=false};im.src=encodeURI(n.image)}
+ }
+ return n._mm||null;
+};
+
 UI.mini=function(){
  const c=$('mini'),g=c.getContext('2d'),me=P[Net.myIdx];if(!me||!S)return;
  const R_=70,k=380/(2*R_),cx=190,cy=190;
@@ -186,10 +195,22 @@ UI.mini=function(){
  const z=S.zone;
  if(z){g.lineWidth=5;g.strokeStyle=z.st==='shrink'?'#ff4a3a':'#2ad4dc';g.beginPath();g.arc(tx(z.cx),tz(z.cz),z.r*k,0,7);g.stroke();
   if(z.st!=='shrink'&&!z.done){g.lineWidth=3;g.strokeStyle='#fff';g.beginPath();g.arc(tx(z.tcx),tz(z.tcz),z.tr*k,0,7);g.stroke()}}
- for(const n of NODES){const x=tx(n.wx),y=tz(n.wz);if(Math.abs(x)>260||Math.abs(y)>260)continue;const ow=S.owner[n.id];g.fillStyle=ow!=null&&S.players[ow]?S.players[ow].color:TYPE_COLORS[n.type]||'#888';g.fillRect(x-9,y-7,18,14);g.strokeStyle='#000';g.lineWidth=2;g.strokeRect(x-9,y-7,18,14)}
- const L=leaderIdx();if(L>=0&&L!==Net.myIdx&&P[L]){g.fillStyle='#ff4a4a';g.font='bold 26px system-ui';g.textAlign='center';let x=tx(P[L].x),y=tz(P[L].z);const d=Math.hypot(x,y);if(d>170){x*=170/d;y*=170/d}g.fillText('★',x,y+8)}
- g.restore();
- g.save();g.translate(cx,cy);g.fillStyle='#f5c542';g.strokeStyle='#000';g.lineWidth=3;g.beginPath();g.moveTo(0,-14);g.lineTo(10,10);g.lineTo(-10,10);g.closePath();g.fill();g.stroke();g.restore();
+const TW=46,TH=34;
+for(const n of NODES){
+ const x=tx(n.wx),y=tz(n.wz);if(Math.abs(x)>260||Math.abs(y)>260)continue;
+ const ow=S.owner[n.id],own=ow!=null&&S.players[ow],col=own?S.players[ow].color:(TYPE_COLORS[n.type]||'#888'),live=zoneLive(n),im=UI.nodeImg(n);
+ g.save();g.translate(x,y);g.rotate(me.yaw);if(!live)g.globalAlpha=.5;
+ const bw=own?4:3;
+ g.fillStyle=col;g.fillRect(-TW/2-bw,-TH/2-bw,TW+bw*2,TH+bw*2);
+ const dark=n.shape==='chart'||n.shape==='news';
+ g.fillStyle=dark?'#0e1414':'#f3eee0';g.fillRect(-TW/2,-TH/2,TW,TH);
+ if(im&&im.width){
+  const cover=n.shape==='photo'||n.shape==='news'||n.shape==='sat'||n.shape==='wide';
+  const s=cover?Math.max(TW/im.width,TH/im.height):Math.min(TW/im.width,TH/im.height);
+  g.save();g.beginPath();g.rect(-TW/2,-TH/2,TW,TH);g.clip();g.drawImage(im,-im.width*s/2,-im.height*s/2,im.width*s,im.height*s);g.restore();
+ }else{g.fillStyle=dark?'#1f2c2c':'#999';g.font='20px serif';g.textAlign='center';g.textBaseline='middle';g.fillText(n.icon||'📌',0,1)}
+ g.strokeStyle='#000';g.lineWidth=2;g.strokeRect(-TW/2-bw,-TH/2-bw,TW+bw*2,TH+bw*2);
+ g.restore();}
 };
 
 /* ---------------- the HUD (10 Hz) ---------------- */
