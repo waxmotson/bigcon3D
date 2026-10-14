@@ -4,6 +4,9 @@
 const R={};
 const MOOD_SKY={CALM:0x142628,BOOM:0x3a2c0c,PANIC:0x3a1010,FRENZY:0x2d1238};
 const RP=[];                 // smoothed render positions per player
+/* The jet cabin the local player stands in while the Qantas flies over the board (metres, jet-local: +x right, +y up, -z nose).
+   Two open doors, one in each side wall. side/fwd is where the player stands: just inside the left door, ahead of the wing. */
+const CABIN={hw:1.95,floor:-1.3,ceil:1.3,nose:-7,tail:8,d0:-4.8,d1:-2,dTop:.85,side:-.7,fwd:3.4};
 const _c1=new THREE.Color(),_c2=new THREE.Color();
 function leaderIdx(){let b=-1,m=60;if(!S)return -1;S.players.forEach((p,i)=>{if(p.alive&&p.money>m){m=p.money;b=i}});return b}
 function dirFrom(yaw,pitch){const cp=Math.cos(pitch);return[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp]}
@@ -185,6 +188,34 @@ R.buildWorld=function(){
  const tail=new THREE.Mesh(new THREE.BoxGeometry(.6,6,4),new THREE.MeshLambertMaterial({color:0xe0001b}));tail.position.set(0,3.8,8.5);jet.add(tail);
  const lab=textSprite('QANTAS · THE FLYING KANGAROO','#ff4a5a',{w:512,h:64,sw:20,sh:2.5,font:'bold 30px system-ui'});lab.position.y=5;jet.add(lab);
  jet.visible=false;W.add(jet);
+ R.mkCabin(W);
+};
+/* The inside of the jet, drawn only for the local player while they are still on board: a short cabin with an open door
+   in each side wall so the whole board can be seen from above. Dimensions come from CABIN. */
+R.mkCabin=function(parent){
+ const C=CABIN,cab=R.cabin=new THREE.Group(),len=C.tail-C.nose,mz=(C.nose+C.tail)/2,h=C.ceil-C.floor,my=(C.ceil+C.floor)/2,T=.08,dw=C.d1-C.d0,dz=(C.d0+C.d1)/2;
+ const lam=c=>new THREE.MeshLambertMaterial({color:c}),flat=c=>new THREE.MeshBasicMaterial({color:c,fog:false});
+ const wall=lam(0xd8d3c4),carpet=lam(0x4c1a22),ceil=lam(0xeeeadf),red=lam(0xe0001b),seat=lam(0x2d3a4a),grey=lam(0xcfcfcf);
+ const box=(m,w,hh,d,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,hh,d),m);o.position.set(x,y,z);cab.add(o);return o};
+ box(carpet,2*C.hw,T,len,0,C.floor-T/2,mz);          // floor
+ box(ceil,2*C.hw,T,len,0,C.ceil+T/2,mz);            // ceiling
+ box(wall,2*C.hw,h,T,0,my,C.nose-T/2);              // cockpit bulkhead
+ box(wall,2*C.hw,h,T,0,my,C.tail+T/2);              // rear bulkhead
+ for(const sd of [-1,1]){
+  const wx=sd*(C.hw+T/2),fx=sd*(C.hw-.05);
+  box(wall,T,h,C.d0-C.nose,wx,my,(C.nose+C.d0)/2);                          // wall forward of the door
+  box(wall,T,h,C.tail-C.d1,wx,my,(C.d1+C.tail)/2);                          // wall behind the door
+  box(wall,T,C.ceil-C.dTop,dw,wx,(C.ceil+C.dTop)/2,dz);                     // wall over the door
+  box(red,.1,C.dTop-C.floor,.12,fx,(C.dTop+C.floor)/2,C.d0);               // door frame
+  box(red,.1,C.dTop-C.floor,.12,fx,(C.dTop+C.floor)/2,C.d1);
+  box(red,.1,.12,dw+.12,fx,C.dTop,dz);
+  box(flat(0xf5c542),.5,.03,dw,sd*(C.hw-.25),C.floor+.02,dz);               // yellow sill line
+  box(flat(0x34e07a),.05,.07,1.2,sd*(C.hw-.04),C.dTop+.16,dz);              // green GO lamp
+  for(let k=0;k<6;k++){const z=.7+k*1.25;box(seat,.5,.45,.5,sd*(C.hw-.5),C.floor+.25,z);box(seat,.12,.75,.5,sd*(C.hw-.25),C.floor+.5,z)}  // seats
+  box(red,11,.4,5.2,sd*(C.hw+5.5),-.3,1.1);                                 // wing: same colour and height as seen from outside
+  const eng=new THREE.Mesh(new THREE.CylinderGeometry(.85,.85,3.2,14),grey);eng.rotation.x=Math.PI/2;eng.position.set(sd*(C.hw+4.8),-1.15,-.4);cab.add(eng);
+ }
+ cab.visible=false;parent.add(cab);
 };
 R.pumpLoads=function(){
  while(R.loading<5&&R.loadQ&&R.loadQ.length){
@@ -229,6 +260,8 @@ R.render=function(dt,v){
  const sc=R.scene,cam=v.mapView?R.mapCam:R.cam;
  // sky follows the market mood
  _c2.set(MOOD_SKY[S.mood]||MOOD_SKY.CALM);R.moodC.lerp(_c2,Math.min(1,dt*1.2));sc.background.copy(R.moodC);sc.fog.color.copy(R.moodC);
+ // up in the jet or under the chute the whole board has to read clearly, so the fog thins out with altitude
+ const hi=Math.max(0,Math.min(1,(v.y-8)/60));sc.fog.near=70+580*hi;sc.fog.far=340+2060*hi;
  // exhibits: owner colours, frozen state
  const T=curT();
  for(const n of NODES){
@@ -252,6 +285,8 @@ R.render=function(dt,v){
  if(S.phase==='jet'||(S.phase==='play'&&T<S.jet.dur+10)){
   const jp=jetPos(T);R.jet.visible=true;R.jet.position.set(jp.x,jp.y,jp.z);R.jet.rotation.y=-Math.atan2(S.jet.dx,-S.jet.dz);
  }else R.jet.visible=false;
+ // while the local player is still on board the outside of the jet is hidden and the cabin is drawn around them instead
+ if(v.jetView){const jp=jetPos(T);R.cabin.position.set(jp.x,jp.y,jp.z);R.cabin.rotation.y=-Math.atan2(S.jet.dx,-S.jet.dz);R.cabin.visible=true;R.jet.visible=false}else R.cabin.visible=false;
  // players
  const L=leaderIdx();
  for(let i=0;i<S.players.length;i++){
@@ -276,7 +311,7 @@ R.render=function(dt,v){
    if(o.big){const b=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,40,8,1,true),new THREE.MeshBasicMaterial({color:0xf5c542,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));b.position.set(o.x,o.y+20,o.z);R.worldGroup.add(b);e.b=b}
    R.pk.set(id,e)}
   e.s.position.set(o.x,o.y+(o.big?1.8:1)+Math.sin(R.t*2.4+e.ph)*.18,o.z);
-  e.s.visible=Math.hypot(o.x-cam.position.x,o.z-cam.position.z)<150;
+  e.s.visible=Math.hypot(o.x-cam.position.x,o.z-cam.position.z)<(v.jetView?420:150);
  }
  for(const [id,e] of R.pk){if(!PK.has(id)){R.worldGroup.remove(e.s);if(e.b)R.worldGroup.remove(e.b);R.pk.delete(id)}}
  // grenades
@@ -291,10 +326,14 @@ R.render=function(dt,v){
  if(v.mapView){cam.position.set(0,560,0);cam.up.set(0,0,-1);cam.lookAt(0,0,0);R.vm.visible=false}
  else if(v.third){const rp=RP[v.follow]||{x:v.x,y:v.y,z:v.z,yaw:v.yaw};const d=dirFrom(rp.yaw,0);cam.position.set(rp.x-d[0]*5,rp.y+3.2,rp.z-d[2]*5);cam.rotation.set(-.25,-rp.yaw,0);R.vm.visible=false}
  else{
-  cam.position.set(v.x,v.y+(v.eye||EYE)+bob,v.z);
-  cam.rotation.set(v.pitch+(v.recoil||0)*.03,-v.yaw,v.roll||0);
+  const jt=v.jetView?1:0;   // a little turbulence in the cabin
+  cam.position.set(v.x,v.y+(v.eye||EYE)+bob+jt*Math.sin(R.t*3.1)*.012,v.z);
+  cam.rotation.set(v.pitch+(v.recoil||0)*.03,-v.yaw,(v.roll||0)+jt*Math.sin(R.t*1.7)*.005);
   R.vm.visible=!v.ads||v.wid!=='short'?!v.hideVm:false;
  }
+ // high up the camera needs a longer reach (and a nearer plane that keeps the depth buffer honest over the whole board)
+ const nearT=hi>0?.4:.08,farT=hi>0?2600:800;
+ if(!v.mapView&&(cam.near!==nearT||cam.far!==farT)){cam.near=nearT;cam.far=farT;cam.updateProjectionMatrix()}
  R.shake*=Math.pow(.02,dt);if(R.shake>.002){cam.position.x+=(Math.random()-.5)*R.shake;cam.position.y+=(Math.random()-.5)*R.shake;cam.rotation.z+=(Math.random()-.5)*R.shake*.05}
  const fov=v.fov||78;if(Math.abs(cam.fov-fov)>.05){cam.fov+=(fov-cam.fov)*Math.min(1,dt*14);cam.updateProjectionMatrix()}
  // viewmodel pose

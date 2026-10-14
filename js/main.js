@@ -5,6 +5,17 @@ const Inv={slots:[{id:'stapler',mag:12,res:48}],cur:0,gren:0,reloading:false,rel
 const Keys={};
 const Game={spec:-1,started:false,locked:false,lanes:[],space:false};
 const SENS=.0022;
+/* Where the local player stands in the jet cabin (CABIN in render.js): just inside the left-hand door, ahead of the wing. */
+function jetStand(t){
+ const jp=jetPos(t),j=S.jet,C=CABIN;
+ return{x:jp.x+j.dx*C.fwd-j.dz*C.side,y:jp.y+C.floor,z:jp.z+j.dz*C.fwd+j.dx*C.side};
+}
+/* Jumping: you step out of whichever door you are facing (sx/sz is the push away from the fuselage). */
+function jetExit(t,yaw){
+ const jp=jetPos(t),j=S.jet,C=CABIN,rx=-j.dz,rz=j.dx;
+ const sd=(Math.sin(yaw)*rx-Math.cos(yaw)*rz)>=0?1:-1,off=sd*(C.hw+1.3);
+ return{x:jp.x+j.dx*C.fwd+rx*off,y:jp.y+C.floor,z:jp.z+j.dz*C.fwd+rz*off,sx:rx*sd,sz:rz*sd};
+}
 
 function curW(){return Inv.slots[Inv.cur]}
 function selectWeapon(idx){
@@ -157,8 +168,10 @@ function update(dt){
  const sy=Math.sin(Me.yaw),cy=Math.cos(Me.yaw);
  let wx=fwd*sy+side*cy,wz=-fwd*cy+side*sy;const wl=Math.hypot(wx,wz);if(wl>1){wx/=wl;wz/=wl}
  if(Me.mode==='jet'){
-  const jp=jetPos(T);Me.x=jp.x;Me.y=jp.y;Me.z=jp.z;
-  if(Game.space||(S.phase!=='jet'&&T>=S.jet.dur-.2)||T>=S.jet.dur-.3){if(T>JET_WAIT+.3||S.phase!=='jet'){Me.mode='air';Me.vy=-8;Me.vx=S.jet.dx*S.jet.spd*.6;Me.vz=S.jet.dz*S.jet.spd*.6;sendHost({t:'intent',act:'eject'});UI.toast('🪂 jumped — steer with WASD, aim for an exhibit')}}
+  const st=jetStand(T);Me.x=st.x;Me.y=st.y;Me.z=st.z;
+  if(Game.space||(S.phase!=='jet'&&T>=S.jet.dur-.2)||T>=S.jet.dur-.3){if(T>JET_WAIT+.3||S.phase!=='jet'){
+   const ex=jetExit(T,Me.yaw);Me.x=ex.x;Me.y=ex.y;Me.z=ex.z;   // out through the door you are facing
+   Me.mode='air';Me.vy=-8;Me.vx=S.jet.dx*S.jet.spd*.6+ex.sx*4;Me.vz=S.jet.dz*S.jet.spd*.6+ex.sz*4;sendHost({t:'intent',act:'eject'});UI.toast('🪂 jumped — steer with WASD, aim for an exhibit')}}
   Game.space=false;
  }else if(Me.mode==='air'){
   const g=World.groundAt(Me.x,Me.z,Me.y),chute=Me.y>g+0&&Me.y<g+38;
@@ -199,7 +212,7 @@ function update(dt){
     Me.pkSkip[o.id]=nowM+1500;act('pick',{id:o.id});if(o.k==='cash')SFX.play('cash');else SFX.play('pick');
    }}
  }
- if(Me.mode!=='ground'){UI.hint(Me.mode==='jet'?'<div class="hn">PRESS <span class="hk">SPACE</span> TO JUMP</div><div class="hs">land near an exhibit — the jet covers the whole board</div>':'');UI.cap(null);Me.cap=0}
+ if(Me.mode!=='ground'){UI.hint(Me.mode==='jet'?'<div class="hn">PRESS <span class="hk">SPACE</span> TO JUMP</div><div class="hs">look out either door with the mouse — pick your exhibit, you leave through the door you are facing</div>':'');UI.cap(null);Me.cap=0}
  // publish
  let fl=0;if(Keys.KeyC&&Me.mode==='ground')fl|=1;if(Me.sprinting)fl|=2;if(Me.firing||Me.flashT>0)fl|=4;if(Me.mode==='air')fl|=8|(Me.y<World.groundAt(Me.x,Me.z,Me.y)+38?32:0);if(Me.mode==='jet')fl|=16;
  q.x=Me.x;q.y=Me.y;q.z=Me.z;q.yaw=Me.yaw;q.pitch=Me.pitch;q.w=curW()?curW().id:'stapler';q.fl=fl;
@@ -238,7 +251,8 @@ function enterGame(isGuest){
  try{if(typeof THREE==='undefined')throw new Error('three.js did not load from the CDN');R.init($('gl'));R.buildWorld();R.setWeapon('stapler')}catch(e){console.error(e);UI.fatal('Could not start the 3D view: '+e.message+' (WebGL needs to be enabled in your browser).');return}
  Game.lanes=EDGES.map(e=>[NMAP[e[0]],NMAP[e[1]]]).filter(l=>l[0]&&l[1]);
  bindInput();
- const jp=jetPos(curT());Me.x=jp.x;Me.y=jp.y;Me.z=jp.z;Me.yaw=Math.atan2(S.jet.dx,-S.jet.dz);Me.pitch=-.15;
+ // start in the cabin, facing out of the left-hand door and looking down at the board
+ const st=jetStand(curT());Me.x=st.x;Me.y=st.y;Me.z=st.z;Me.yaw=Math.atan2(S.jet.dx,-S.jet.dz)-Math.PI/2;Me.pitch=-.5;
  const q=P[Net.myIdx]||(P[Net.myIdx]={});Object.assign(q,{x:Me.x,y:Me.y,z:Me.z,yaw:Me.yaw,pitch:0,w:'stapler',fl:16});
  SFX.init();SFX.music=true;SFX.startMusic();
  // host simulation keeps ticking even if this tab loses focus (browsers throttle it, but never stop it)
@@ -252,7 +266,7 @@ function enterGame(isGuest){
    const p=myP(),alive=p&&p.alive;
    const sp=!alive&&Game.spec>=0;
    const w=curW(),W=w?WEAPONS[w.id]:null,ads=Me.ads&&alive&&Me.mode==='ground';
-   R.render(dt,{x:Me.x,y:Me.y,z:Me.z,yaw:Me.yaw,pitch:Me.pitch,eye:Me.eye,bob:Me.bob,recoil:Me.recoil,roll:(Keys.KeyD?-.012:Keys.KeyA?.012:0)*(Me.mode==='ground'?1:0),ads,wid:w&&w.id,mapView:Me.mode==='jet',fov:ads?(W&&W.zoom?78/W.zoom:60):(Me.sprinting?84:78),flashT:Me.flashT,
+   R.render(dt,{x:Me.x,y:Me.y,z:Me.z,yaw:Me.yaw,pitch:Me.pitch,eye:Me.eye,bob:Me.bob,recoil:Me.recoil,roll:(Keys.KeyD?-.012:Keys.KeyA?.012:0)*(Me.mode==='ground'?1:0),ads,wid:w&&w.id,jetView:Me.mode==='jet',fov:ads?(W&&W.zoom?78/W.zoom:60):(Me.sprinting?84:78),flashT:Me.flashT,
     third:sp||(!alive&&Game.spec<0&&false),follow:Game.spec,hideVm:!alive||Me.mode!=='ground',vmDip:Me.sprinting?.06:0});
    $('scope').style.display=ads&&W&&W.zoom?'block':'none';$('cross').className=ads?'ads':'';
    hudT+=dt;if(hudT>.1){hudT=0;UI.hud()}
