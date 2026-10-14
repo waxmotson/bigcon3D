@@ -33,7 +33,7 @@ const BOT_CHARACTERS={
  'Short Seller Sal':null,
  'Backroom Barry':null,
  'QUITE FRANKLY':"DJT",
- 'Ed Wilson':"edwilson"
+ 'The Big Ag':"thebigag"
 };
 const BOT_NAMES=Object.keys(BOT_CHARACTERS);
 let S=null;

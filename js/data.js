@@ -180,14 +180,14 @@ const CHARS=[
  {id:'tomkins',name:'Jake Tomkins',file:'tomkins.png'},
  {id:'jimchalmers',name:'Jim Chalmers',file:'jimchalmers.png'},
  {id:'bessock',name:'Bessock',file:'bessock.png'},
- {id:'calvinathanasius',name:'Aidan Newling / Calvin Athanasius',file:'calvinathanasius.png'},
+ {id:'calvinathanasius',name:'Calvin Athanasius',file:'calvinathanasius.png'},
  {id:'denialswan',name:'Daniel Swain / Denial Swan',file:'denialswan.png'},
  {id:'japsnchen',name:'Japsn Chen',file:'japsnchen.png'},
- {id:'thousandyardwax',name:'McMetro Max / Thousand Yard Wax',file:'thousandyardwax.png'},
+ {id:'thousandyardwax',name:'Thousand Yard Wax',file:'thousandyardwax.png'},
  {id:'thebigwegrzyn',name:'Seth Wegrzyn',file:'thebigwegrzyn.png'},
  {id:'alexander_lane',name:'The guy from Toktimer / Alexander Lane',file:'Alexander_Lane.png'},
  {id:'djt',name:'QUITE FRANKLY / DJT',file:'DJT.png'},
- {id:'edwilson',name:'Ed Wilson',file:'edwilson.png'}
+ {id:'thebigag',name:'The Big Ag',file:'thebigag.png'}
 ];
 // Character IDs are case-insensitive so roster mappings such as "DJT" and
 // "Alexander_Lane" still resolve after the directory scanner normalises IDs.
