@@ -224,6 +224,9 @@ for(const n of NODES){
  }else{g.fillStyle=dark?'#1f2c2c':'#999';g.font='20px serif';g.textAlign='center';g.textBaseline='middle';g.fillText(n.icon||'📌',0,1)}
  g.strokeStyle='#000';g.lineWidth=2;g.strokeRect(-TW/2-bw,-TH/2-bw,TW+bw*2,TH+bw*2);
  g.restore();}
+ // Restore the canvas transform for the next frame. Without this, translate/rotate
+ // accumulate on every minimap redraw and the map appears frozen or drifts away.
+ g.restore();
 };
 
 /* ---------------- the HUD (10 Hz) ---------------- */
