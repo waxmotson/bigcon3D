@@ -168,7 +168,17 @@ function update(dt){
  const sy=Math.sin(Me.yaw),cy=Math.cos(Me.yaw);
  let wx=fwd*sy+side*cy,wz=-fwd*cy+side*sy;const wl=Math.hypot(wx,wz);if(wl>1){wx/=wl;wz/=wl}
  if(Me.mode==='jet'){
-  const st=jetStand(T);Me.x=st.x;Me.y=st.y;Me.z=st.z;
+  // Walk around the cabin while the jet is in flight. Movement is relative to the
+  // aircraft, so the player stays aboard as the plane moves across the map.
+  const jp=jetPos(T),j=S.jet,C=CABIN,rx=-j.dz,rz=j.dx;
+  const jetMove=8*dt;
+  Me.jetFwd=Me.jetFwd||0;Me.jetSide=Me.jetSide||0;
+  Me.jetFwd+=(-fwd)*jetMove;
+  Me.jetSide+=side*jetMove;
+  Me.jetFwd=Math.max(C.nose+1-C.fwd,Math.min(C.tail-1-C.fwd,Me.jetFwd));
+  Me.jetSide=Math.max(-C.hw+1-C.side,Math.min(C.hw-1-C.side,Me.jetSide));
+  Me.x=jp.x+j.dx*(C.fwd+Me.jetFwd)+rx*(C.side+Me.jetSide);
+  Me.y=jp.y+C.floor;Me.z=jp.z+j.dz*(C.fwd+Me.jetFwd)+rz*(C.side+Me.jetSide);
   if(Game.space||(S.phase!=='jet'&&T>=S.jet.dur-.2)||T>=S.jet.dur-.3){if(T>JET_WAIT+.3||S.phase!=='jet'){
    const ex=jetExit(T,Me.yaw);Me.x=ex.x;Me.y=ex.y;Me.z=ex.z;   // out through the door you are facing
    Me.mode='air';Me.vy=-8;Me.vx=S.jet.dx*S.jet.spd*.6+ex.sx*4;Me.vz=S.jet.dz*S.jet.spd*.6+ex.sz*4;sendHost({t:'intent',act:'eject'});UI.toast('🪂 jumped — steer with WASD, aim for an exhibit')}}
@@ -212,7 +222,7 @@ function update(dt){
     Me.pkSkip[o.id]=nowM+1500;act('pick',{id:o.id});if(o.k==='cash')SFX.play('cash');else SFX.play('pick');
    }}
  }
- if(Me.mode!=='ground'){UI.hint(Me.mode==='jet'?'<div class="hn">PRESS <span class="hk">SPACE</span> TO JUMP</div><div class="hs">look out either door with the mouse — pick your exhibit, you leave through the door you are facing</div>':'');UI.cap(null);Me.cap=0}
+ if(Me.mode!=='ground'){UI.hint(Me.mode==='jet'?'<div class="hn">WASD TO MOVE · SPACE TO JUMP</div><div class="hs">walk around the cabin while the jet is flying; look out either door and jump when ready</div>':'');UI.cap(null);Me.cap=0}
  // publish
  let fl=0;if(Keys.KeyC&&Me.mode==='ground')fl|=1;if(Me.sprinting)fl|=2;if(Me.firing||Me.flashT>0)fl|=4;if(Me.mode==='air')fl|=8|(Me.y<World.groundAt(Me.x,Me.z,Me.y)+38?32:0);if(Me.mode==='jet')fl|=16;
  q.x=Me.x;q.y=Me.y;q.z=Me.z;q.yaw=Me.yaw;q.pitch=Me.pitch;q.w=curW()?curW().id:'stapler';q.fl=fl;
