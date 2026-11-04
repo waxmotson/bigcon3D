@@ -1,22 +1,102 @@
 'use strict';
-/* THE BIG CON 3D — networking. Same peer-to-peer model as v1.5: one browser hosts, up to 7 friends join
-   with a JTPortal buzzword. The host runs the simulation and relays everyone's movement; guests send their own
-   position at 15 Hz and the host sanity-checks every shot and every deal. */
-const PFX='bigcon3d-oz-';
-const BIGCON_ICE_CONFIG={
- iceServers:[
-  {urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302','stun:global.stun.twilio.com:3478']},
-  {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478','turn:eu-0.turn.peerjs.com:3478?transport=tcp','turn:us-0.turn.peerjs.com:3478?transport=tcp'],username:'peerjs',credential:'peerjsp'},
-  {urls:['turns:eu-0.turn.peerjs.com:5349','turns:us-0.turn.peerjs.com:5349'],username:'peerjs',credential:'peerjsp'}
- ],sdpSemantics:'unified-plan',iceCandidatePoolSize:4
-};
-const BIGCON_PEER_OPTIONS={config:BIGCON_ICE_CONFIG,debug:1,pingInterval:5000};
+/* THE BIG CON 3D — Cloudflare Durable Object room relay.
+   The host remains authoritative; this layer only transports the existing game messages. */
+const RELAY_BASE='wss://bigconhosting.wax-no-bones.workers.dev';
+const HEARTBEAT_MS=4000,CONN_TIMEOUT_MS=16000,SNAP_HZ=15,STATE_GAP=.22;
+
+class RelayConnection {
+ constructor(peer,id,role){this.peer=peer;this.id=id;this.role=role;this.open=false;this.closed=false;this.handlers=Object.create(null)}
+ on(type,fn){(this.handlers[type]||(this.handlers[type]=[])).push(fn);return this}
+ _emit(type,value){(this.handlers[type]||[]).slice().forEach(fn=>{try{fn(value)}catch(e){console.error(e)}})}
+ _setOpen(){if(this.closed||this.open)return;this.open=true;this._emit('open')}
+ _finish(){if(this.closed)return;this.closed=true;this.open=false;this._emit('close');if(this.id)this.peer.connections.delete(this.id)}
+ send(data){
+  if(!this.open||this.closed)return;
+  this.peer._send({type:'data',target:this.role==='host'?this.id:undefined,data});
+ }
+ close(){
+  if(this.closed)return;
+  if(this.role==='host'&&this.id)this.peer._send({type:'leave',target:this.id});
+  this._finish();
+ }
+}
+
+class CloudflareRelayPeer {
+ constructor(room,role){
+  this.room=room;this.role=role;this.id=null;this.open=false;this.ready=false;this.destroyed=false;
+  this.handlers=Object.create(null);this.connections=new Map();this.guestConnection=null;this.failed=false;
+  const url=RELAY_BASE+'/ws/'+encodeURIComponent(room)+'?role='+role;
+  try{
+   this.ws=new WebSocket(url);
+   this.ws.addEventListener('open',()=>this._send({type:'join'}));
+   this.ws.addEventListener('message',e=>this._message(e.data));
+   this.ws.addEventListener('error',()=>{if(!this.ready)this._fail(role==='host'?'unavailable-id':'peer-unavailable','Could not connect to the Cloudflare room relay')});
+   this.ws.addEventListener('close',()=>this._closed());
+  }catch(e){this._fail('network',e&&e.message||'Could not open the Cloudflare room relay')}
+ }
+ on(type,fn){(this.handlers[type]||(this.handlers[type]=[])).push(fn);return this}
+ _emit(type,value){(this.handlers[type]||[]).slice().forEach(fn=>{try{fn(value)}catch(e){console.error(e)}})}
+ _send(message){
+  if(this.ws&&this.ws.readyState===WebSocket.OPEN){try{this.ws.send(JSON.stringify(message));return true}catch(e){}}
+  return false;
+ }
+ _fail(type,message){
+  if(this.failed||this.destroyed)return;this.failed=true;
+  this._emit('error',{type,message});
+ }
+ _closed(){
+  if(this.destroyed)return;
+  if(!this.ready)this._fail(this.role==='host'?'unavailable-id':'peer-unavailable','The room relay rejected or closed the connection');
+  this.open=false;
+  for(const c of Array.from(this.connections.values()))c._finish();
+  if(this.guestConnection)this.guestConnection._finish();
+  this._emit('disconnected');
+ }
+ _message(raw){
+  let msg;try{msg=JSON.parse(raw)}catch(e){return}
+  if(msg.type==='ready'){
+   this.ready=true;this.open=true;this.id=msg.id;this._emit('open',this.id);
+   if(this.role==='guest'&&this.guestConnection)queueMicrotask(()=>this.guestConnection._setOpen());
+   return;
+  }
+  if(msg.type==='incoming'&&this.role==='host'){
+   if(this.connections.has(msg.id))return;
+   const c=new RelayConnection(this,msg.id,'host');this.connections.set(msg.id,c);
+   this._emit('connection',c);queueMicrotask(()=>c._setOpen());return;
+  }
+  if(msg.type==='data'){
+   const c=this.role==='host'?this.connections.get(msg.source):this.guestConnection;
+   if(c&&c.open)c._emit('data',msg.data);return;
+  }
+  if(msg.type==='left'&&this.role==='host'){
+   const c=this.connections.get(msg.id);if(c)c._finish();return;
+  }
+  if(msg.type==='host_lost'&&this.role==='guest'){
+   if(this.guestConnection)this.guestConnection._finish();return;
+  }
+  if(msg.type==='error')this._fail(msg.code||'network',msg.message||'Room relay error');
+ }
+ connect(){
+  if(this.role!=='guest')throw new Error('Only guest relay connections can call connect()');
+  if(this.guestConnection&&!this.guestConnection.closed)return this.guestConnection;
+  const c=this.guestConnection=new RelayConnection(this,null,'guest');
+  if(this.ready)queueMicrotask(()=>c._setOpen());
+  return c;
+ }
+ destroy(){
+  if(this.destroyed)return;this.destroyed=true;
+  for(const c of Array.from(this.connections.values()))c._finish();
+  if(this.guestConnection)this.guestConnection._finish();
+  try{if(this.ws&&this.ws.readyState<2)this.ws.close(1000,'Client closed')}catch(e){}
+  this.open=false;
+ }
+}
 const HEARTBEAT_MS=4000,CONN_TIMEOUT_MS=16000,SNAP_HZ=15,STATE_GAP=.22;
 const $=id=>document.getElementById(id);
 function codeSlug(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
 function codeLabel(slug){const hit=BUZZWORDS.find(b=>codeSlug(b)===slug);return hit||slug}
 function matchBuzzword(input){const s=codeSlug(input);if(!s)return '';if(BUZZWORDS.some(b=>codeSlug(b)===s))return s;const hits=BUZZWORDS.filter(b=>codeSlug(b).startsWith(s));return hits.length===1?codeSlug(hits[0]):s}
-function genCode(){return codeSlug(BUZZWORDS[Math.floor(Math.random()*BUZZWORDS.length)])}
+function genCode(){return codeSlug(BUZZWORDS[Math.floor(Math.random()*BUZZWORDS.length)])+String(100+Math.floor(Math.random()*900))}
 function setNetStatus(msg,err){const el=$('netStatus');el.textContent=msg||'';el.className=err?'err':''}
 function cleanName(s){return String(s||'').replace(/[<>&"'`]/g,'').trim().slice(0,16)}
 function getPlayerId(){const key='bigcon3d-player-id';let id=null;try{id=sessionStorage.getItem(key)}catch(e){}if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));try{sessionStorage.setItem(key,id)}catch(e){}}return id}
@@ -200,7 +280,7 @@ function showLobby(asHost){
 function setGoalUI(){$('goalNote').textContent=Net.role==='host'?'you set the target':'the host sets the target';$('botsNote').textContent=Net.bots+' bots fill the jet'}
 
 /* ---------- host / join ---------- */
-const solo=()=>typeof Peer==='undefined'||!Net.peer;
+const solo=()=>!Net.peer;
 function hostCreate(name,offline){
  Net.role='host';Net.myName=name;Net.playerId=getPlayerId();Net.myIdx=0;Net.roster=[{name,playerId:Net.playerId,conn:null,char:null}];Net.conns=[null];
  if(offline){Net.roomCode='SOLO';Net.roomLabel='SOLO — YOU VS THE BOTS';showLobby(true);setNetStatus('Offline room — no friends can join. Hit BOARD THE JET.');return}
@@ -210,31 +290,41 @@ function hostCreate(name,offline){
 }
 function hostOpenPeer(){
  const code=Net.roomCode,old=Net.peer;if(old&&!old.destroyed){try{old.destroy()}catch(_){}}
- const p=new Peer(PFX+code,BIGCON_PEER_OPTIONS);Net.peer=p;let opened=false;
- p.on('open',()=>{opened=true;Net.peerOpen=true;if(Net.peer!==p)return;showLobby(true);if(!Net.started)setNetStatus('Room created — seats up to '+MAXHUMANS+' humans. Waiting for co-conspirators…')});
- p.on('disconnected',()=>{if(Net.peer!==p||p.destroyed)return;try{p.reconnect()}catch(_){setTimeout(()=>{if(Net.peer===p)hostOpenPeer()},1500)}});
+ const p=new CloudflareRelayPeer(code,'host');Net.peer=p;let opened=false;
+ p.on('open',()=>{
+  opened=true;Net.peerOpen=true;if(Net.peer!==p)return;
+  showLobby(true);if(!Net.started)setNetStatus('Cloudflare room created — share '+Net.roomLabel+'. Waiting for co-conspirators…');
+ });
+ p.on('disconnected',()=>{
+  if(Net.peer!==p||p.destroyed)return;
+  setNetStatus('Relay connection interrupted — reconnecting the room…',true);
+  setTimeout(()=>{if(Net.peer===p&&!p.destroyed)hostOpenPeer()},1800);
+ });
  p.on('error',e=>{
   const ty=e&&e.type;if(Net.peer!==p)return;
-  if(ty==='unavailable-id'&&!opened&&!Net.started){try{p.destroy()}catch(x){}Net.roomCode=genCode();Net.roomLabel=codeLabel(Net.roomCode);hostOpenPeer();return}
-  if(ty==='unavailable-id'){setTimeout(()=>{if(Net.peer===p)hostOpenPeer()},2000);return}
-  if(ty==='network'||ty==='socket-error'||ty==='socket-closed'||ty==='server-error'){setNetStatus('Matchmaker hiccup — reopening the room…',true);setTimeout(()=>{if(Net.peer===p)hostOpenPeer()},2000);return}
-  if(ty==='peer-unavailable')return;
-  setNetStatus('Network error: '+(ty||'unknown')+' — check your connection, or play SOLO.',true);
+  if(ty==='unavailable-id'&&!opened&&!Net.started){
+   try{p.destroy()}catch(x){}
+   Net.roomCode=genCode();Net.roomLabel=codeLabel(Net.roomCode);hostOpenPeer();return;
+  }
+  setNetStatus('Cloudflare relay error: '+(e&&e.message||ty||'unknown')+'. Check the relay service and try again.',true);
  });
- p.on('connection',c=>{c.on('open',()=>{c.__lastSeen=Date.now();c.on('data',d=>{try{onHostData(c,d)}catch(err){console.error(err)}})});c.on('close',()=>onHostClose(c));c.on('error',()=>onHostClose(c))});
+ p.on('connection',c=>{
+  c.on('open',()=>{c.__lastSeen=Date.now();c.on('data',d=>{try{onHostData(c,d)}catch(err){console.error(err)}})});
+  c.on('close',()=>onHostClose(c));
+  c.on('error',()=>onHostClose(c));
+ });
 }
 let guestRetry=0,guestHb=null;
 function guestJoin(name,code){
  Net.role='guest';Net.myName=name;Net.playerId=getPlayerId();Net.roomCode=matchBuzzword(code);Net.roomLabel=codeLabel(Net.roomCode);
- if(typeof Peer==='undefined'){setNetStatus('PeerJS failed to load — check your connection.',true);return}
  connectGuest();
 }
 function connectGuest(){
- setNetStatus('Finding room '+Net.roomLabel+'…');
+ setNetStatus('Connecting to Cloudflare room '+Net.roomLabel+'…');
  const old=Net.peer;if(old&&!old.destroyed){try{old.destroy()}catch(_){}}
- const p=new Peer(BIGCON_PEER_OPTIONS);Net.peer=p;
+ const p=new CloudflareRelayPeer(Net.roomCode,'guest');Net.peer=p;
  p.on('open',()=>{
-  const c=p.connect(PFX+Net.roomCode,{reliable:true});Net.conn=c;
+  const c=p.connect();Net.conn=c;
   const to=setTimeout(()=>{
    if(!c.open){
     setNetStatus('Room connection timed out — retrying '+Net.roomLabel+'…',true);
@@ -243,36 +333,27 @@ function connectGuest(){
     else if(!Net.started)setNetStatus('Could not reach room “'+Net.roomLabel+'”. Check the code and ask the host to keep the room open.',true);
    }
   },12000);
-  c.on('open',()=>{clearTimeout(to);guestRetry=0;c.__lastSeen=Date.now();sendConn(c,{t:'hello',name:Net.myName,playerId:Net.playerId});setNetStatus('Connected — waiting for the lobby…');startGuestHeartbeat(c)});
+  c.on('open',()=>{clearTimeout(to);guestRetry=0;c.__lastSeen=Date.now();sendConn(c,{t:'hello',name:Net.myName,playerId:Net.playerId});setNetStatus('Connected to Cloudflare relay — waiting for the lobby…');startGuestHeartbeat(c)});
   c.on('data',d=>{c.__lastSeen=Date.now();try{onGuestData(d)}catch(e){console.error(e)}});
-  c.on('close',()=>{if(c.__lost)return;c.__lost=true;guestLost()});c.on('error',()=>{if(c.__lost)return;c.__lost=true;guestLost()});
+  c.on('close',()=>{if(c.__lost)return;c.__lost=true;guestLost()});
+  c.on('error',()=>{if(c.__lost)return;c.__lost=true;guestLost()});
  });
  p.on('error',e=>{
   if(Net.peer!==p)return;
   const ty=e&&e.type;
   if(ty==='peer-unavailable'&&!Net.started&&guestRetry<4){
-   guestRetry++;setNetStatus('Room not visible yet — retrying '+Net.roomLabel+' ('+guestRetry+'/4)…',true);
+   guestRetry++;setNetStatus('Room not available yet — retrying '+Net.roomLabel+' ('+guestRetry+'/4)…',true);
    setTimeout(()=>{if(!Net.started&&Net.peer===p)connectGuest()},700*guestRetry);return;
   }
   if(ty==='peer-unavailable')setNetStatus('No room called “'+Net.roomLabel+'” right now. Check the code and that the host is connected.',true);
-  else if(!Net.started)setNetStatus('Network error: '+(ty||'unknown')+' — check your connection and try again.',true);
+  else if(!Net.started)setNetStatus('Cloudflare relay error: '+(e&&e.message||ty||'unknown')+'. Check your connection and try again.',true);
  });
-}
-function startGuestHeartbeat(c){clearInterval(guestHb);guestHb=setInterval(()=>{if(!c.open)return;sendConn(c,{t:'ping'});if(Date.now()-(c.__lastSeen||0)>CONN_TIMEOUT_MS){try{c.close()}catch(e){}}},HEARTBEAT_MS)}
-function guestLost(){
- clearInterval(guestHb);
- if(!Net.started){
-  if(guestRetry++<4){setNetStatus('Connection dropped — retrying '+Net.roomLabel+' ('+guestRetry+'/4)…',true);setTimeout(connectGuest,700*guestRetry)}
-  else setNetStatus('Could not join the room. Check the code, host connection, and network, then try again.',true);
-  return;
- }
- if(guestRetry++<6){UI.toast('Connection lost — reconnecting ('+guestRetry+')…');setTimeout(connectGuest,1200*guestRetry)}
- else UI.fatal('The host is gone. Reload to start again.');
 }
 function onGuestData(d){
  if(!d||!d.t)return;
  if(d.t==='ping'){sendConn(Net.conn,{t:'pong'});return}
  if(d.t==='pong')return;
+ if(d.t==='host_lost'){guestLost();return}
  if(d.t==='welcome'){Net.myIdx=d.idx;Net.lobbyList=d.lobby;Net.goal=d.goal;Net.bots=d.bots|0;Net.lobbyChat=d.chat||[];setNetStatus('In the lobby — pick a face and wait for the host.');showLobby(false);return}
  if(d.t==='lobby'){Net.lobbyList=d.list;Net.goal=d.goal;Net.bots=d.bots|0;$('goalInput').value=Net.goal;$('botsInput').value=Net.bots;setGoalUI();renderLobbyList();renderCharGrid();updateStartBtn();return}
  if(d.t==='lchat'){Net.lobbyChat.push(d.m);if(Net.lobbyChat.length>60)Net.lobbyChat.shift();renderLobbyChat();return}
