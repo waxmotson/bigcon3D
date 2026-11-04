@@ -29,7 +29,7 @@ A multiplayer first-person battle royale built on the rules of **THE BIG CON**. 
 The Stapler · Ticker Tape (SMG) · The Cash Rate (rifle) · Yield Curve (shotgun) · The Short Seller (sniper)
 
 ## Multiplayer
-Peer-to-peer via PeerJS, same JTPortal buzzword room codes as v1.5. One browser hosts and runs the simulation; others join by code. Solo mode (vs bots) needs no network. Bots fill the jet up to 24 and take over seats of dropped players.
+Multiplayer uses the same Cloudflare Worker + Durable Object WebSocket room relay as THE BIG CON. One browser hosts and runs the simulation; others join with the shared room code. The relay routes existing game messages between players while the host remains authoritative. Rooms support up to eight concurrent human connections. Solo mode (vs bots) needs no network. Bots fill the jet up to 24 and take over seats of dropped players.
 
 The host is authoritative for money, Intel, Cortisol, ownership, health, the dragnet and the event deck. Clients own their own movement and aim; the host validates every shot (rate, range, proximity) and every deal (position, price). This is a casual-play trust model, not anti-cheat.
 
@@ -42,7 +42,7 @@ js/econ.js          income + seizure pricing (verbatim from v1.5)
 js/world.js         arena, collision, raycasts, weapons table
 js/core.js          host simulation: damage, zone, ticks, events, abilities, win checks
 js/bots.js          bot AI
-js/net.js           PeerJS lobby + messaging
+js/net.js           Cloudflare Durable Object room relay + messaging
 js/render.js        three.js renderer
 js/ui.js            HUD, Con Menu, maps, audio
 js/main.js          player controller + frame loop
