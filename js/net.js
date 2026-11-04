@@ -91,7 +91,6 @@ class CloudflareRelayPeer {
   this.open=false;
  }
 }
-const HEARTBEAT_MS=4000,CONN_TIMEOUT_MS=16000,SNAP_HZ=15,STATE_GAP=.22;
 const $=id=>document.getElementById(id);
 function codeSlug(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
 function codeLabel(slug){const hit=BUZZWORDS.find(b=>codeSlug(b)===slug);return hit||slug}
