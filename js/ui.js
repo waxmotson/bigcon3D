@@ -306,7 +306,7 @@ UI.bindSetup=function(){
  $('btnHost').onclick=()=>{UI.solo=false;show('hostForm');$('btnCreate').textContent='CREATE ROOM';$('hostName').focus()};
  $('btnSolo').onclick=()=>{UI.solo=true;show('hostForm');$('btnCreate').textContent='START SOLO LOBBY';$('hostName').focus()};
  $('btnJoin').onclick=()=>{show('joinForm');$('joinName').focus()};
- $('btnCreate').onclick=()=>{const n=cleanName($('hostName').value)||'Con Artist';try{localStorage.setItem('bigcon3d-name',n)}catch(e){}SFX.init();hostCreate(n,UI.solo||typeof Peer==='undefined')};
+ $('btnCreate').onclick=()=>{const n=cleanName($('hostName').value)||'Con Artist';try{localStorage.setItem('bigcon3d-name',n)}catch(e){}SFX.init();hostCreate(n,UI.solo)};
  $('btnJoinGo').onclick=()=>{const n=cleanName($('joinName').value)||'Con Artist',c=$('joinCode').value;if(!c.trim()){setNetStatus('Type the buzzword the host read out.',true);return}try{localStorage.setItem('bigcon3d-name',n)}catch(e){}SFX.init();guestJoin(n,c)};
  $('btnCopy').onclick=()=>{try{navigator.clipboard.writeText(Net.roomLabel||'')}catch(e){}UI.toast('code copied')};
  $('lobbyChatSend').onclick=sendLobbyChat;$('lobbyChatInput').onkeydown=e=>{if(e.key==='Enter')sendLobbyChat()};
