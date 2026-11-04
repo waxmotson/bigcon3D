@@ -284,16 +284,16 @@ const solo=()=>!Net.peer;
 function hostCreate(name,offline){
  Net.role='host';Net.myName=name;Net.playerId=getPlayerId();Net.myIdx=0;Net.roster=[{name,playerId:Net.playerId,conn:null,char:null}];Net.conns=[null];
  if(offline){Net.roomCode='SOLO';Net.roomLabel='SOLO — YOU VS THE BOTS';showLobby(true);setNetStatus('Offline room — no friends can join. Hit BOARD THE JET.');return}
- setNetStatus('Contacting the matchmaker…');
+ setNetStatus('Contacting the Cloudflare room relay…');
  Net.roomCode=genCode();Net.roomLabel=codeLabel(Net.roomCode);Net.peerOpen=false;hostOpenPeer();startHostHeartbeat();
- clearTimeout(Net.openTimer);Net.openTimer=setTimeout(()=>{if(!Net.peerOpen)setNetStatus('Cannot reach the PeerJS matchmaker (network, firewall or ad-blocker?). You can still play SOLO vs bots.',true)},12000);
+ clearTimeout(Net.openTimer);Net.openTimer=setTimeout(()=>{if(!Net.peerOpen)setNetStatus('Cannot reach the Cloudflare room relay. Check your connection or try again.',true)},12000);
 }
 function hostOpenPeer(){
  const code=Net.roomCode,old=Net.peer;if(old&&!old.destroyed){try{old.destroy()}catch(_){}}
  const p=new CloudflareRelayPeer(code,'host');Net.peer=p;let opened=false;
  p.on('open',()=>{
   opened=true;Net.peerOpen=true;if(Net.peer!==p)return;
-  showLobby(true);if(!Net.started)setNetStatus('Cloudflare room created — share '+Net.roomLabel+'. Waiting for co-conspirators…');
+  if(!Net.started){showLobby(true);setNetStatus('Cloudflare room created — share '+Net.roomLabel+'. Waiting for co-conspirators…')}else setNetStatus('Cloudflare relay reconnected — restoring player connections…');
  });
  p.on('disconnected',()=>{
   if(Net.peer!==p||p.destroyed)return;
@@ -309,7 +309,8 @@ function hostOpenPeer(){
   setNetStatus('Cloudflare relay error: '+(e&&e.message||ty||'unknown')+'. Check the relay service and try again.',true);
  });
  p.on('connection',c=>{
-  c.on('open',()=>{c.__lastSeen=Date.now();c.on('data',d=>{try{onHostData(c,d)}catch(err){console.error(err)}})});
+  c.on('data',d=>{c.__lastSeen=Date.now();try{onHostData(c,d)}catch(err){console.error(err)}});
+  c.on('open',()=>{c.__lastSeen=Date.now()});
   c.on('close',()=>onHostClose(c));
   c.on('error',()=>onHostClose(c));
  });
