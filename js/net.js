@@ -30,7 +30,7 @@ class CloudflareRelayPeer {
    this.ws=new WebSocket(url);
    this.ws.addEventListener('open',()=>this._send({type:'join'}));
    this.ws.addEventListener('message',e=>this._message(e.data));
-   this.ws.addEventListener('error',()=>{if(!this.ready)this._fail(role==='host'?'unavailable-id':'peer-unavailable','Could not connect to the Cloudflare room relay')});
+   this.ws.addEventListener('error',()=>{if(!this.ready)this._fail('network','Could not connect to the Cloudflare room relay')});
    this.ws.addEventListener('close',()=>this._closed());
   }catch(e){this._fail('network',e&&e.message||'Could not open the Cloudflare room relay')}
  }
@@ -46,7 +46,7 @@ class CloudflareRelayPeer {
  }
  _closed(){
   if(this.destroyed)return;
-  if(!this.ready)this._fail(this.role==='host'?'unavailable-id':'peer-unavailable','The room relay rejected or closed the connection');
+  if(!this.ready)this._fail('network','The room relay rejected or closed the connection');
   this.open=false;
   for(const c of Array.from(this.connections.values()))c._finish();
   if(this.guestConnection)this.guestConnection._finish();
@@ -95,7 +95,7 @@ const $=id=>document.getElementById(id);
 function codeSlug(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
 function codeLabel(slug){const hit=BUZZWORDS.find(b=>codeSlug(b)===slug);return hit||slug}
 function matchBuzzword(input){const s=codeSlug(input);if(!s)return '';if(BUZZWORDS.some(b=>codeSlug(b)===s))return s;const hits=BUZZWORDS.filter(b=>codeSlug(b).startsWith(s));return hits.length===1?codeSlug(hits[0]):s}
-function genCode(){return codeSlug(BUZZWORDS[Math.floor(Math.random()*BUZZWORDS.length)])+String(100+Math.floor(Math.random()*900))}
+function genCode(){return codeSlug(BUZZWORDS[Math.floor(Math.random()*BUZZWORDS.length)])+String(1000+Math.floor(Math.random()*9000))}
 function setNetStatus(msg,err){const el=$('netStatus');el.textContent=msg||'';el.className=err?'err':''}
 function cleanName(s){return String(s||'').replace(/[<>&"'`]/g,'').trim().slice(0,16)}
 function getPlayerId(){const key='bigcon3d-player-id';let id=null;try{id=sessionStorage.getItem(key)}catch(e){}if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));try{sessionStorage.setItem(key,id)}catch(e){}}return id}
@@ -289,9 +289,9 @@ function hostCreate(name,offline){
 }
 function hostOpenPeer(){
  const code=Net.roomCode,old=Net.peer;if(old&&!old.destroyed){try{old.destroy()}catch(_){}}
- const p=new CloudflareRelayPeer(code,'host');Net.peer=p;let opened=false;
+ const p=new CloudflareRelayPeer(code,'host');Net.peer=p;
  p.on('open',()=>{
-  opened=true;Net.peerOpen=true;if(Net.peer!==p)return;
+  Net.peerOpen=true;if(Net.peer!==p)return;
   if(!Net.started){showLobby(true);setNetStatus('Cloudflare room created — share '+Net.roomLabel+'. Waiting for co-conspirators…')}else setNetStatus('Cloudflare relay reconnected — restoring player connections…');
  });
  p.on('disconnected',()=>{
@@ -301,10 +301,6 @@ function hostOpenPeer(){
  });
  p.on('error',e=>{
   const ty=e&&e.type;if(Net.peer!==p)return;
-  if(ty==='unavailable-id'&&!opened&&!Net.started){
-   try{p.destroy()}catch(x){}
-   Net.roomCode=genCode();Net.roomLabel=codeLabel(Net.roomCode);hostOpenPeer();return;
-  }
   setNetStatus('Cloudflare relay error: '+(e&&e.message||ty||'unknown')+'. Check the relay service and try again.',true);
  });
  p.on('connection',c=>{
