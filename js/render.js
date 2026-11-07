@@ -12,7 +12,7 @@ function leaderIdx(){let b=-1,m=60;if(!S)return -1;S.players.forEach((p,i)=>{if(
 function dirFrom(yaw,pitch){const cp=Math.cos(pitch);return[Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp]}
 function textSprite(text,color,opts){
  opts=opts||{};const W=opts.w||256,H=opts.h||64,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
- g.font=opts.font||'bold 34px system-ui,Arial';g.textAlign='center';g.textBaseline='middle';g.lineWidth=7;g.strokeStyle='#000';g.lineJoin='round';
+ g.font=opts.font||'bold 34px "Bricolage Grotesque",system-ui,Arial';g.textAlign='center';g.textBaseline='middle';g.lineWidth=7;g.strokeStyle='#000';g.lineJoin='round';
  g.strokeText(text,W/2,H/2);g.fillStyle=color;g.fillText(text,W/2,H/2);
  const t=new THREE.CanvasTexture(c);const m=new THREE.SpriteMaterial({map:t,transparent:true,depthTest:opts.depth!==false,fog:false});
  const s=new THREE.Sprite(m);s.scale.set(opts.sw||W/32,opts.sh||H/32,1);return s;
@@ -30,7 +30,7 @@ function pickupTex(o){
   const col=o.k==='wp'?WEAPONS[o.w].col:{cash:'#7fe08d',intel:'#55c1ff',hp:'#ff8a9a',armor:'#9ad',ammo:'#f5c542',gren:'#ffa94d'}[o.k];
   g.fillStyle='rgba(0,0,0,.55)';g.beginPath();g.arc(64,64,58,0,7);g.fill();g.lineWidth=7;g.strokeStyle=col;g.stroke();
   g.font='64px serif';g.textAlign='center';g.textBaseline='middle';g.fillStyle='#fff';g.fillText(em,64,o.k==='wp'?54:68);
-  if(o.k==='wp'){g.font='bold 15px system-ui';g.fillStyle=col;g.fillText(WEAPONS[o.w].n.replace('THE ',''),64,100)}
+  if(o.k==='wp'){g.font='bold 15px "Bricolage Grotesque",system-ui';g.fillStyle=col;g.fillText(WEAPONS[o.w].n.replace('THE ',''),64,100)}
  });
 }
 const faceTex={};
@@ -66,7 +66,7 @@ function cardCanvas(n,img){
  const dark=n.shape==='chart'||n.shape==='news';
  g.fillStyle=dark?'#0e1414':'#f3eee0';g.fillRect(0,0,W,H);
  g.fillStyle=n.band||TYPE_COLORS[n.type]||'#666';g.fillRect(0,0,W,32);
- g.fillStyle='#fff';g.font='bold 19px system-ui,Arial';g.textBaseline='middle';g.textAlign='left';g.fillText(n.icon?n.icon+' '+n.type:n.type,10,17);
+ g.fillStyle='#fff';g.font='bold 19px "Bricolage Grotesque",system-ui,Arial';g.textBaseline='middle';g.textAlign='left';g.fillText(n.icon?n.icon+' '+n.type:n.type,10,17);
  g.textAlign='right';g.fillText('$'+n.cost+'  ·  +$'+n.income,W-10,17);
  const ix=10,iy=40,iw=W-20,ih=140;
  g.fillStyle=dark?'#000':'#fff';g.fillRect(ix,iy,iw,ih);
@@ -76,7 +76,7 @@ function cardCanvas(n,img){
   g.save();g.beginPath();g.rect(ix,iy,iw,ih);g.clip();g.drawImage(img,ix+iw/2-img.width*s/2,iy+(cover?0:ih/2-img.height*s/2),img.width*s,img.height*s);g.restore();
  }else{g.fillStyle=dark?'#1f2c2c':'#ddd';g.font='64px serif';g.textAlign='center';g.fillText(n.icon||'📌',W/2,iy+ih/2)}
  g.fillStyle=dark?'#e8e8e8':'#1a1a1a';g.textAlign='center';g.textBaseline='alphabetic';
- const lines=n.name.length;g.font='bold '+(lines>2?15:lines>1?17:21)+'px "Times New Roman",serif';
+ const lines=n.name.length;g.font=(lines>2?15:lines>1?17:21)+'px Bestigia,"Bricolage Grotesque",sans-serif';
  n.name.forEach((l,k)=>g.fillText(l.length>26?l.slice(0,25)+'…':l,W/2,196+k*(lines>2?15:18)+(lines>2?0:4)));
  return c;
 }
@@ -120,7 +120,7 @@ R.boom=function(x,y,z){
 };
 R.float=function(x,y,z,text,col){
  const key=text+col;let tex=R._ft&&R._ft[key];
- const s=textSprite(text,col,{w:384,h:72,font:'bold 40px system-ui,Arial',sw:7.5,sh:1.4,depth:false});
+ const s=textSprite(text,col,{w:384,h:72,font:'bold 40px "Bricolage Grotesque",system-ui,Arial',sw:7.5,sh:1.4,depth:false});
  s.position.set(x,y,z);s.renderOrder=20;R.scene.add(s);R.ft.push({s,t:0,y0:y});
 };
 /* ---------- the world ---------- */
@@ -186,7 +186,7 @@ R.buildWorld=function(){
  const body=new THREE.Mesh(new THREE.BoxGeometry(4,3,20),new THREE.MeshLambertMaterial({color:0xf2f2f2}));jet.add(body);
  const wing=new THREE.Mesh(new THREE.BoxGeometry(26,.5,5),new THREE.MeshLambertMaterial({color:0xe0001b}));wing.position.set(0,-.3,1);jet.add(wing);
  const tail=new THREE.Mesh(new THREE.BoxGeometry(.6,6,4),new THREE.MeshLambertMaterial({color:0xe0001b}));tail.position.set(0,3.8,8.5);jet.add(tail);
- const lab=textSprite('QANTAS · THE FLYING KANGAROO','#ff4a5a',{w:512,h:64,sw:20,sh:2.5,font:'bold 30px system-ui'});lab.position.y=5;jet.add(lab);
+ const lab=textSprite('QANTAS · THE FLYING KANGAROO','#ff4a5a',{w:512,h:64,sw:20,sh:2.5,font:'bold 30px "Bricolage Grotesque",system-ui'});lab.position.y=5;jet.add(lab);
  jet.visible=false;W.add(jet);
  R.mkCabin(W);
 };
@@ -243,9 +243,9 @@ function getAvatar(i){
  const legs=new THREE.Mesh(new THREE.CylinderGeometry(.24,.2,.5,8),new THREE.MeshLambertMaterial({color:0x222a2a}));legs.position.y=.25;g.add(legs);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshBasicMaterial({map:getFace(p.char),color:0xffffff,fog:false}));head.position.y=1.6;g.add(head);
  const gun=new THREE.Mesh(new THREE.BoxGeometry(.08,.1,.55),new THREE.MeshLambertMaterial({color:0xcccccc}));gun.position.set(.3,1.0,-.35);g.add(gun);
- const tag=textSprite(p.name,'#fff',{w:256,h:48,sw:5,sh:.95,font:'bold 26px system-ui'});tag.position.y=2.35;g.add(tag);
+ const tag=textSprite(p.name,'#fff',{w:256,h:48,sw:5,sh:.95,font:'bold 26px "Bricolage Grotesque",system-ui'});tag.position.y=2.35;g.add(tag);
  const chute=new THREE.Mesh(new THREE.SphereGeometry(2.6,14,8,0,6.283,0,1.45),new THREE.MeshLambertMaterial({color:0xe0001b,side:THREE.DoubleSide,transparent:true,opacity:.92}));chute.position.y=4.4;chute.visible=false;g.add(chute);
- const wanted=textSprite('★ WANTED','#ff4a4a',{w:256,h:48,sw:5,sh:.95,font:'900 28px system-ui',depth:false});wanted.position.y=3.1;wanted.visible=false;g.add(wanted);
+ const wanted=textSprite('★ WANTED','#ff4a4a',{w:256,h:48,sw:5,sh:.95,font:'900 28px "Bricolage Grotesque",system-ui',depth:false});wanted.position.y=3.1;wanted.visible=false;g.add(wanted);
  R.worldGroup.add(g);
  return R.av[i]={g,body,gun,tag,chute,wanted,legs,lastW:'',ph:Math.random()*6};
 }
@@ -269,7 +269,7 @@ R.render=function(dt,v){
   if(nd.key!==key){
    nd.key=key;
    if(ow>=0&&S.players[ow]){const c=S.players[ow].color;nd.ring.material.color.set(c);nd.ring.material.opacity=.95;nd.frame.material.color.set(c);nd.beam.material.color.set(c);nd.beam.visible=live;
-    if(nd.label){nd.g.remove(nd.label)}nd.label=textSprite(S.players[ow].name,c,{w:256,h:48,sw:7,sh:1.3,font:'bold 28px system-ui'});nd.label.position.y=nd.top+1.2;nd.g.add(nd.label)}
+    if(nd.label){nd.g.remove(nd.label)}nd.label=textSprite(S.players[ow].name,c,{w:256,h:48,sw:7,sh:1.3,font:'bold 28px "Bricolage Grotesque",system-ui'});nd.label.position.y=nd.top+1.2;nd.g.add(nd.label)}
    else{const base=live?nd.col:'#555';nd.ring.material.color.set(base);nd.ring.material.opacity=live?.5:.25;nd.frame.material.color.set(live?nd.col:'#333');nd.beam.visible=false;if(nd.label){nd.g.remove(nd.label);nd.label=null}}
   }
   if(nd.beam.visible)nd.beam.material.opacity=.2+.12*Math.sin(R.t*3+n.wx);
