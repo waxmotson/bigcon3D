@@ -76,7 +76,7 @@ function cardCanvas(n,img){
   g.save();g.beginPath();g.rect(ix,iy,iw,ih);g.clip();g.drawImage(img,ix+iw/2-img.width*s/2,iy+(cover?0:ih/2-img.height*s/2),img.width*s,img.height*s);g.restore();
  }else{g.fillStyle=dark?'#1f2c2c':'#ddd';g.font='64px serif';g.textAlign='center';g.fillText(n.icon||'📌',W/2,iy+ih/2)}
  g.fillStyle=dark?'#e8e8e8':'#1a1a1a';g.textAlign='center';g.textBaseline='alphabetic';
- const lines=n.name.length;g.font=(lines>2?15:lines>1?17:21)+'px Bestigia,"Bricolage Grotesque",sans-serif';
+ const lines=n.name.length;g.font=(lines>2?15:lines>1?17:21)+'px Tomkins Display,"Bricolage Grotesque",sans-serif';
  n.name.forEach((l,k)=>g.fillText(l.length>26?l.slice(0,25)+'…':l,W/2,196+k*(lines>2?15:18)+(lines>2?0:4)));
  return c;
 }
